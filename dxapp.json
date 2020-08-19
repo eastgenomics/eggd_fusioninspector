@@ -14,7 +14,7 @@
       "class": "file",
       "optional": false,
       "patterns": [
-        "*.fastq.gz"
+        "*.fastq.gz$"
       ],
       "help": ""
     },
@@ -36,7 +36,10 @@
       "patterns": [
         "*.txt"
       ],
-      "help": ""
+      "help": "",
+      "suggestions":[
+        {"name":"Test Directory 2020 Fusions","value": {"$dnanexus_link": {"project": "project-Fv28zZQ4pgK1G8883KF254VY","id": "file-Fvxx0z04pgK02fK17f52x6g2"}}}
+      ]
     },
     {
       "name": "sr_predictions",
@@ -55,6 +58,9 @@
       "optional": false,
       "patterns": [
         "*.gz"
+      ],
+      "suggestions":[
+        {"name":"GRCh37 Star Fusion Genome","value": {"$dnanexus_link": {"project": "project-Fv28zZQ4pgK1G8883KF254VY","id": "file-Fv2FF60428Xg8JFjJ8ZBX82z"}}}
       ],
       "help": "STAR genome resources"
     }
