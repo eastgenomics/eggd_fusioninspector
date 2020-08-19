@@ -42,7 +42,7 @@ sudo docker run -v `pwd`:/home --rm trinityctat/fusioninspector:latest FusionIns
        --left_fq /home/R1.fastq.gz \
        --right_fq /home/R2.fastq.gz \
        --out_prefix ${prefix}\
-       --genome_lib_dir ${CTAT_GENOME_LIB}
+       --genome_lib_dir ${CTAT_GENOME_LIB} \
        --vis \
        --include_Trinity \
        --examine_coding_effect \

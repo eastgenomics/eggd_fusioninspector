@@ -14,7 +14,7 @@
       "class": "file",
       "optional": false,
       "patterns": [
-        "*.fastq.gz$"
+        "*.fastq.gz"
       ],
       "help": ""
     },
