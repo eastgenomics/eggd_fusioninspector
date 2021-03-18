@@ -5,7 +5,7 @@
 
 
 # Output each line as it is executed (-x) and don't stop if any non zero exit codes are seen (+e)
-set -x +e
+set -x
 
 mkdir -p out/fi_outputs/
 
@@ -25,7 +25,7 @@ dx download "$sr_predictions" -o predicted_fusions.tsv
 dx cat "$genome_lib" | tar zxf - 
 
 # Sets genome variable 
-CTAT_GENOME_LIB=/home/GRCh37_gencode_v19_CTAT_lib_Apr032020.plug-n-play/ctat_genome_lib_build_dir
+CTAT_GENOME_LIB=/home/GRCh37_gencode_v19_CTAT_lib_Mar012021.plug-n-play/ctat_genome_lib_build_dir
 
 # Prefix for sample naming - to be fixed once workflow is added
 sample=($left_fq_prefix)
