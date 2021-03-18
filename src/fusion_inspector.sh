@@ -10,7 +10,9 @@ set -x +e
 mkdir -p out/fi_outputs/
 
 # Get fusion inspector docker image
-sudo docker pull trinityctat/fusioninspector
+sudo docker pull trinityctat/fusioninspector:2.3.1
+docker tag trinityctat/fusioninspector:2.3.1 trinityctat/fusioninspector:latest
+
 
 # download genome resources and decompress
 dx cat "$genome_lib" | tar zxf -
