@@ -86,7 +86,7 @@
     "file": "src/fusion_inspector.sh",
     "release": "20.04",
     "distribution": "Ubuntu",
-    "version": "1"
+    "version": "0"
   },
   "access": {
     "network": [
