@@ -1,6 +1,6 @@
 #!/bin/bash
 # fusion_inspector 1.0.0
-# Extracts a pair of genes from the genome, creates a mini-contig, 
+# Extracts a pair of genes from the genome, creates a mini-contig,
 # aligns reads to the mini-contig, and extracts the fusion reads as a separate tier for vsiualization
 
 
@@ -24,10 +24,10 @@ dx download "$known_fusions" -o fusions_list.txt
 dx download "$sr_predictions" -o predicted_fusions.tsv
 
 # download genome resources and decompress
-dx cat "$genome_lib" | tar zxf - 
+dx cat "$genome_lib" | tar zxf -
 
-# Sets genome variable 
-CTAT_GENOME_LIB=/home/GRCh37_gencode_v19_CTAT_lib_Apr032020.plug-n-play/ctat_genome_lib_build_dir
+# Sets genome variable
+CTAT_GENOME_LIB=$(find . -type d -name "GR*plug-n-play")
 
 # Prefix for sample naming - to be fixed once workflow is added
 sample=($left_fq_prefix)
@@ -37,7 +37,7 @@ prefix="${sample/'_R1_concat'/''}"
 cut -f 1 predicted_fusions.tsv | grep -v '#FusionName' > predicted_fusions.txt
 
 
-# Runs fusion inspector using known_fusions and predicted_fusions files 
+# Runs fusion inspector using known_fusions and predicted_fusions files
 sudo docker run -v `pwd`:/home --rm trinityctat/fusioninspector:latest FusionInspector  \
        --fusions /home/fusions_list.txt,/home/predicted_fusions.txt \
        -O /home/out/fi_outputs/${prefix} \
@@ -48,7 +48,7 @@ sudo docker run -v `pwd`:/home --rm trinityctat/fusioninspector:latest FusionIns
        --vis \
        --include_Trinity \
        --examine_coding_effect \
-       --extract_fusion_reads_file ${prefix}.FusionInspector-pe_samples/fusion_reads 
+       --extract_fusion_reads_file ${prefix}.FusionInspector-pe_samples/fusion_reads
 
 
 # upload all outputs
