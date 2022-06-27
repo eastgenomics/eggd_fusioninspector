@@ -38,13 +38,13 @@ cut -f 1 predicted_fusions.tsv | grep -v '#FusionName' > predicted_fusions.txt
 
 
 # Runs fusion inspector using known_fusions and predicted_fusions files
-sudo docker run -v `pwd`:/home --rm trinityctat/fusioninspector:latest FusionInspector  \
-       --fusions /home/fusions_list.txt,/home/predicted_fusions.txt \
-       -O /home/out/fi_outputs/${prefix} \
-       --left_fq /home/R1.fastq.gz \
-       --right_fq /home/R2.fastq.gz \
+sudo docker run -v `pwd`:/data --rm trinityctat/fusioninspector:latest FusionInspector  \
+       --fusions /data/fusions_list.txt,/data/predicted_fusions.txt \
+       -O /data/out/fi_outputs/${prefix} \
+       --left_fq /data/R1.fastq.gz \
+       --right_fq /data/R2.fastq.gz \
        --out_prefix ${prefix}\
-       --genome_lib_dir ${CTAT_GENOME_LIB} \
+       --genome_lib_dir /data/${CTAT_GENOME_LIB}/ctat_genome_lib_build_dir \
        --vis \
        --include_Trinity \
        --examine_coding_effect \
