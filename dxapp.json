@@ -1,0 +1,89 @@
+{
+  "name": "eggd_fusioninspector",
+  "title": "eggd_fusioninspector",
+  "summary": "Runs the FusionInspector bioinformatics tool, which rescores candidate fusion transcripts and provides HTML reports of supporting information. ",
+  "dxapi": "1.0.0",
+  "version": "1.0.0",
+  "inputSpec": [
+    {
+      "name": "fusion_candidates",
+      "label": "fusion_candidates",
+      "class": "file",
+      "optional": false,
+      "patterns": [
+        "*"
+      ],
+      "help": ""
+    },
+    {
+      "name": "sentieon_tar",
+      "label": "sentieon_tar",
+      "class": "file",
+      "optional": false,
+      "patterns": [
+        "*"
+      ],
+      "help": ""
+    },
+    {
+      "name": "left_fq",
+      "label": "left FASTQ",
+      "class": "file",
+      "optional": false,
+      "patterns": [
+        "*"
+      ],
+      "help": ""
+    },
+    {
+      "name": "right_fq",
+      "label": "right FASTQ",
+      "class": "file",
+      "optional": false,
+      "patterns": [
+        "*"
+      ],
+      "help": ""
+    }
+  ],
+  "outputSpec": [
+    {
+      "name": "outdir",
+      "label": "out directory",
+      "class": "string",
+      "help": ""
+    }
+  ],
+  "runSpec": {
+    "timeoutPolicy": {
+      "*": {
+        "hours": 8
+      }
+    },
+    "interpreter": "bash",
+    "file": "src/code.sh",
+    "distribution": "Ubuntu",
+    "release": "20.04",
+    "version": "0"
+  },
+  "developers":[
+    "org-emee_1"
+  ],
+  "authorizedUsers": [
+    "org-emee_1"
+  ],
+  "access": {
+    "project": "CONTRIBUTE",
+    "network": ["*"],
+    "allProjects": "VIEW"
+  },
+  "regionalOptions": {
+    "aws:eu-central-1": {
+      "systemRequirements": {
+        "*": {
+          "instanceType": "mem2_ssd1_v2_x16"
+        }
+      }
+    }
+  }
+}
