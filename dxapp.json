@@ -18,12 +18,10 @@
     {
       "name": "sentieon_tar",
       "label": "sentieon_tar",
+      "help": "tarballed sentieon download",
       "class": "file",
-      "optional": false,
-      "patterns": [
-        "*"
-      ],
-      "help": ""
+      "patterns": ["sentieon-genomics-*.tar.gz"],
+      "optional": false
     },
     {
       "name": "left_fq",
