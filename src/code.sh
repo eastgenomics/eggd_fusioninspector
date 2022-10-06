@@ -19,16 +19,16 @@ dx download "$genome_lib"
 tar xf /home/dnanexus/in/genome_lib/*.tar.gz -C /home/dnanexus
 lib_dir=$(find . -type d -name "GR*plug-n-play")
 
+# TODO: concatenate multiple lanes?
+
 # Get FusionInspector Docker image by its ID
 docker load -i /home/dnanexus/in/fi_docker/*.tar.gz
 DOCKER_IMAGE_ID=$(docker images --format="{{.Repository}} {{.ID}}" | grep "^trinityctat/fusioninspector" | cut -d' ' -f2)
 
 # get the sample name from the chimeric file, then rename to generic
-sample_name=$(echo "$sr_predictions" | cut -d '_' -f 1)
+sample_name=$(echo "$sr_predictions" | cut -d '.' -f 1)
 mv /home/dnanexus/sr_predictions/*.tsv /home/dnanexus/sr_predictions.tsv
-
-# Prefix for sample naming - to be fixed once workflow is added
-prefix="${sample_name/'_R1_concat'/''}"
+prefix="${sample_name}"
 
 # Extracts the fusion pairs from the predictions file (unfiltered)
 cut -f 1 predicted_fusions.tsv | grep -v '#FusionName' > predicted_fusions.txt
@@ -50,8 +50,15 @@ sudo docker run -v "$(pwd)":/data --rm \
        --examine_coding_effect \
        --extract_fusion_reads_file "${prefix}".FusionInspector-pe_samples/fusion_reads
 
+# TODO: might not need code below - depends if prefix works as I think
+# mark-section "iterate over output files and add sample names"
+
+# for file in /home/dnanexus/${prefix} ; do 
+#        mv "$file" "${sample_name}.${file}"; 
+# done
+
 mark-section "upload outputs"
-# upload all outputs
+
 dx-upload-all-outputs --parallel
 
 mark-success
