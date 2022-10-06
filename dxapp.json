@@ -1,7 +1,7 @@
 {
   "name": "fusion_inspector_v1.0.0(2.3.1)",
   "title": "FusionInspector_v1.0.0",
-  "summary": "Identify fusions using known fusion pairs.",
+  "summary": "Identify fusions using known 'rescue list' fusion pairs, plus predictions from tools",
   "dxapi": "1.0.0",
   "version": "1.0.0",
   "properties": {
