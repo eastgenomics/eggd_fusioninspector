@@ -1,7 +1,7 @@
 {
   "name": "fusion_inspector_v1.0.0(2.3.1)",
   "title": "FusionInspector_v1.0.0",
-  "summary": "Identify fusions using know fusion pairs",
+  "summary": "Identify fusions using known fusion pairs.",
   "dxapi": "1.0.0",
   "version": "1.0.0",
   "properties": {
@@ -83,11 +83,17 @@
       }
     },
     "interpreter": "bash",
-    "file": "src/fusion_inspector.sh",
+    "file": "src/code.sh",
     "release": "20.04",
     "distribution": "Ubuntu",
     "version": "0"
   },
+  "developers":[
+    "org-emee_1"
+  ],
+  "authorizedUsers": [
+    "org-emee_1"
+  ],
   "access": {
     "network": [
       "*"
