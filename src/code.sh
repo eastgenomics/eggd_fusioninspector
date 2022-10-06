@@ -10,9 +10,9 @@ set -x +e
 mkdir -p out/fi_outputs/
 
 # Get fusion inspector docker image
-sudo docker pull trinityctat/fusioninspector:2.3.1
-docker tag trinityctat/fusioninspector:2.3.1 trinityctat/fusioninspector:latest
-
+# load the Docker and get its image ID
+docker load -i /home/dnanexus/in/fi_docker/*.tar.gz
+DOCKER_IMAGE_ID=$(docker images --format="{{.Repository}} {{.ID}}" | grep "^trinityctat/fusioninspector" | cut -d' ' -f2)
 
 # download genome resources and decompress
 dx cat "$genome_lib" | tar zxf -
@@ -38,7 +38,9 @@ cut -f 1 predicted_fusions.tsv | grep -v '#FusionName' > predicted_fusions.txt
 
 
 # Runs fusion inspector using known_fusions and predicted_fusions files
-sudo docker run -v `pwd`:/data --rm trinityctat/fusioninspector:latest FusionInspector  \
+sudo docker run -v "$(pwd)":/data --rm \
+       "${DOCKER_IMAGE_ID}" \
+       FusionInspector  \
        --fusions /data/fusions_list.txt,/data/predicted_fusions.txt \
        -O /data/out/fi_outputs/${prefix} \
        --left_fq /data/R1.fastq.gz \

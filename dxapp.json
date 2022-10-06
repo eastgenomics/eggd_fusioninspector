@@ -9,6 +9,13 @@
   },
   "inputSpec": [
     {
+      "name": "fi_docker",
+      "label": "fi_docker",
+      "help": "File ID of FusionInspector Docker image in DNA Nexus",
+      "class": "file",
+      "optional": false
+    },
+    {
       "name": "left_fq",
       "label": "Left fastq",
       "class": "file",
@@ -95,9 +102,6 @@
     "org-emee_1"
   ],
   "access": {
-    "network": [
-      "*"
-    ],
     "project": "CONTRIBUTE"
   },
   "regionalOptions": {
