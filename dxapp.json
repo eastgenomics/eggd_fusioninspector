@@ -77,11 +77,8 @@
       "name": "fi_outputs",
       "label": "all fusion inspector outputs",
       "class": "array:file",
-      "patterns": [
-        "*"
-      ],
-      "help": ""
-    }
+      "help": "FusionInspector outputs"
+      }
   ],
   "runSpec": {
     "timeoutPolicy": {

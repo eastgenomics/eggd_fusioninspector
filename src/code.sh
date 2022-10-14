@@ -11,11 +11,7 @@ mkdir -p out/fi_outputs/
 
 # download all inputs, untar plug-n-play resources, and get its path
 mark-section "download inputs"
-dx download "$r1_fastqs" -o R1.fastq.gz
-dx download "$r2_fastqs" -o R2.fastq.gz
-dx download "$known_fusions" -o fusions_list.txt
-dx download "$sr_predictions"
-dx download "$genome_lib"
+dx-download-all-inputs
 tar xf /home/dnanexus/in/genome_lib/*.tar.gz -C /home/dnanexus
 lib_dir=$(find . -type d -name "GR*plug-n-play")
 
@@ -23,16 +19,14 @@ lib_dir=$(find . -type d -name "GR*plug-n-play")
 # by default every fastq in the array goes into a numbered dir on its own
 mkdir /home/dnanexus/r1_fastqs
 mkdir /home/dnanexus/r2_fastqs
-find ~/in/fastqs -type f -name "*.R1.*" -print0 | xargs -0 -I {} mv {} ~/r1_fastqs
-find ~/in/fastqs -type f -name "*.R2.*" -print0 | xargs -0 -I {} mv {} ~/r2_fastqs
+find ~/in/r1_fastqs -type f -name "*.R1.*" -print0 | xargs -0 -I {} mv {} ~/r1_fastqs
+find ~/in/r2_fastqs -type f -name "*.R2.*" -print0 | xargs -0 -I {} mv {} ~/r2_fastqs
 
 printf -v R1_list ',/home/dnanexus/r1_fastqs/%s' "${R1[@]}"
 R1_list=${R1_list:1}  # Remove leading comma
 
 printf -v R2_list ',/home/dnanexus/r2_fastqs/%s' "${R2[@]}"
 R2_list=${R2_list:1}  # Remove leading comma
-
-# TODO: sanity checking on lanes
 
 # Get FusionInspector Docker image by its ID
 docker load -i /home/dnanexus/in/fi_docker/*.tar.gz
@@ -42,6 +36,9 @@ DOCKER_IMAGE_ID=$(docker images --format="{{.Repository}} {{.ID}}" | grep "^trin
 sample_name=$(echo "$sr_predictions" | cut -d '.' -f 1)
 mv /home/dnanexus/sr_predictions/*.tsv /home/dnanexus/sr_predictions.tsv
 prefix="${sample_name}"
+
+# TODO: sanity checking on prefix
+# TODO: sanity checking on lanes
 
 # Extracts the fusion pairs from the predictions file (unfiltered)
 cut -f 1 predicted_fusions.tsv | grep -v '#FusionName' > predicted_fusions.txt
@@ -53,7 +50,7 @@ sudo docker run -v "$(pwd)":/data --rm \
        "${DOCKER_IMAGE_ID}" \
        FusionInspector  \
        --fusions /data/fusions_list.txt,/data/predicted_fusions.txt \
-       -O /data/out/fi_outputs/"${prefix}" \
+       -O /data/out/fi_outputs \
        --left_fq /data/"${R1_list}" \
        --right_fq /data/"${R2_list}" \
        --out_prefix "${prefix}"\
