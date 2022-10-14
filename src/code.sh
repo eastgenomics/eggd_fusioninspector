@@ -42,7 +42,8 @@ mv /home/dnanexus/in/sr_predictions/*.tsv /home/dnanexus/sr_predictions.tsv
 # TODO: sanity checking on lanes
 
 # Extracts the fusion pairs from the predictions file (unfiltered)
-cut -f 1 predicted_fusions.tsv | grep -v '#FusionName' > predicted_fusions.txt
+cut -f 1 /home/dnanexus/in/sr_predictions/${sr_predictions_name} \
+| grep -v '#FusionName' > /home/dnanexus/in/sr_predictions/predicted_fusions.txt
 
 mark-section "run FusionInspector"
 
@@ -50,7 +51,7 @@ mark-section "run FusionInspector"
 sudo docker run -v "$(pwd)":/data --rm \
        "${DOCKER_IMAGE_ID}" \
        FusionInspector  \
-       --fusions /data/in/known_fusions/${known_fusions_name},/data/in/sr_predictions/${sr_predictions_name} \
+       --fusions /data/in/known_fusions/${known_fusions_name},/home/dnanexus/in/sr_predictions/predicted_fusions.txt \
        -O /data/out/fi_outputs \
        --left_fq /data/"${R1_comma_sep}" \
        --right_fq /data/"${R2_comma_sep}" \
