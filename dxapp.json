@@ -16,9 +16,9 @@
       "optional": false
     },
     {
-      "name": "left_fq",
-      "label": "Left fastq",
-      "class": "file",
+      "name": "r1_fastqs",
+      "label": "Read 1 fastq files",
+      "class": "array:file",
       "optional": false,
       "patterns": [
         "*.fastq.gz"
@@ -26,9 +26,9 @@
       "help": ""
     },
     {
-      "name": "right_fq",
-      "label": "right fastq",
-      "class": "file",
+      "name": "r2_fastqs",
+      "label": "Read 2 fastq files",
+      "class": "array:file",
       "optional": false,
       "patterns": [
         "*.fastq.gz"
