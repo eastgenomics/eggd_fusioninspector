@@ -19,15 +19,15 @@ lib_dir=$(find . -type d -name "GR*plug-n-play")
 # by default every fastq in the array goes into a numbered dir on its own
 mkdir /home/dnanexus/r1_fastqs
 mkdir /home/dnanexus/r2_fastqs
-find ~/in/r1_fastqs -type f -name "*.R1.*" -print0 | xargs -0 -I {} mv {} ~/r1_fastqs
-find ~/in/r2_fastqs -type f -name "*.R2.*" -print0 | xargs -0 -I {} mv {} ~/r2_fastqs
+find ~/r1_fastqs -type f -name "*.R1.*" -print0 | xargs -0 -I {} mv {} ~/r1_fastqs
+find ~/r2_fastqs -type f -name "*.R2.*" -print0 | xargs -0 -I {} mv {} ~/r2_fastqs
 
 R1_comma_sep=$(find . -path 'r1_fastqs/*' -print0 | tr '\0' ,)
 R2_comma_sep=$(find . -path 'r2_fastqs/*' -print0 | tr '\0' ,)
 
 # get names of fusion files for Docker
-known_fusions_name=$(find /home/dnanexus/in/known_fusions -type f -printf)
-sr_predictions_name=$(find /home/dnanexus/in/sr_predictions -type f -printf)
+known_fusions_name=$(find /home/dnanexus/in/known_fusions -type f -printf "%f\n")
+sr_predictions_name=$(find /home/dnanexus/in/sr_predictions -type f -printf "%f\n")
 
 # Get FusionInspector Docker image by its ID
 docker load -i /home/dnanexus/in/fi_docker/*.tar.gz
