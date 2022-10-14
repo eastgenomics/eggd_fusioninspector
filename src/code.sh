@@ -22,11 +22,12 @@ mkdir /home/dnanexus/r2_fastqs
 find ~/in/r1_fastqs -type f -name "*.R1.*" -print0 | xargs -0 -I {} mv {} ~/r1_fastqs
 find ~/in/r2_fastqs -type f -name "*.R2.*" -print0 | xargs -0 -I {} mv {} ~/r2_fastqs
 
-printf -v R1_list ',/home/dnanexus/r1_fastqs/%s' "${R1[@]}"
-R1_list=${R1_list:1}  # Remove leading comma
+R1_comma_sep=$(find . -path 'r1_fastqs/*' -print0 | tr '\0' ,)
+R2_comma_sep=$(find . -path 'r2_fastqs/*' -print0 | tr '\0' ,)
 
-printf -v R2_list ',/home/dnanexus/r2_fastqs/%s' "${R2[@]}"
-R2_list=${R2_list:1}  # Remove leading comma
+# get names of fusion files for Docker
+known_fusions_name=$(find /home/dnanexus/in/known_fusions -type f -printf)
+sr_predictions_name=$(find /home/dnanexus/in/sr_predictions -type f -printf)
 
 # Get FusionInspector Docker image by its ID
 docker load -i /home/dnanexus/in/fi_docker/*.tar.gz
@@ -49,10 +50,11 @@ mark-section "run FusionInspector"
 sudo docker run -v "$(pwd)":/data --rm \
        "${DOCKER_IMAGE_ID}" \
        FusionInspector  \
-       --fusions /data/fusions_list.txt,/data/predicted_fusions.txt \
+       --fusions /data/in/known_fusions/${known_fusions_name},\
+       /data/in/sr_predictions/${sr_predictions_name} \
        -O /data/out/fi_outputs \
-       --left_fq /data/"${R1_list}" \
-       --right_fq /data/"${R2_list}" \
+       --left_fq /data/"${R1_comma_sep}" \
+       --right_fq /data/"${R2_comma_sep}" \
        --out_prefix "${prefix}"\
        --genome_lib_dir /data/"${lib_dir}"/ctat_genome_lib_build_dir \
        --vis \
