@@ -50,8 +50,7 @@ mark-section "run FusionInspector"
 sudo docker run -v "$(pwd)":/data --rm \
        "${DOCKER_IMAGE_ID}" \
        FusionInspector  \
-       --fusions /data/in/known_fusions/${known_fusions_name},\
-       /data/in/sr_predictions/${sr_predictions_name} \
+       --fusions /data/in/known_fusions/${known_fusions_name},/data/in/sr_predictions/${sr_predictions_name} \
        -O /data/out/fi_outputs \
        --left_fq /data/"${R1_comma_sep}" \
        --right_fq /data/"${R2_comma_sep}" \
