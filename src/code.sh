@@ -24,10 +24,8 @@ find ./in/r2_fastqs -type f -name "*R2*" -print0 | xargs -0 -I {} mv {} ./r2_fas
 # set up 1 or more fastq files in a list
 read_1=$(find ./r1_fastqs/ -type f -name "*" -name "*R1*.fastq*" -printf '%p,' | \
 sed 's/\.\///g' | sed -e 's/^/\/data\//')
-read_1=$(${read_1::-1})
 read_2=$(find ./r2_fastqs/ -type f -name "*" -name "*R2*.fastq*" -printf '%p,' | \
 sed 's/\.\///g' | sed -e 's/^/\/data//')
-read_2=$(${read_2::-1})
 
 # get names of fusion files for Docker
 known_fusions_name=$(find /home/dnanexus/in/known_fusions -type f -printf "%f\n")
@@ -55,8 +53,8 @@ sudo docker run -v "$(pwd)":/data --rm \
        FusionInspector  \
        --fusions /data/in/known_fusions/"${known_fusions_name}",/data/in/sr_predictions/predicted_fusions.txt \
        -O /data/out/fi_outputs \
-       --left_fq "${read_1}" \
-       --right_fq "${read_2}" \
+       --left_fq "${read_1::-1}" \
+       --right_fq "${read_2::-1}" \
        --out_prefix "${prefix}"\
        --genome_lib_dir /data"${lib_dir}"/ctat_genome_lib_build_dir \
        --vis \
