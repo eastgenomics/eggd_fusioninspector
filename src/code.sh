@@ -28,7 +28,7 @@ find ./in/r2_fastqs -type f -name "*R2*" -print0 | xargs -0 -I {} mv {} ./r2_fas
 R1_comma_sep=$(find . -path './r1_fastqs/*' -print0 | cut -d '.' -f 2- ) || \
 R1_comma_sep=$(find . -path './r1_fastqs/*' -print0 | cut -d '.' -f 2- | tr '\0' ,)
 
-[[ $(find ./r1_fastqs -type f -name "*R2*" | wc -l ) == 1 ]] && \
+[[ $(find ./r2_fastqs -type f -name "*R2*" | wc -l ) == 1 ]] && \
 R2_comma_sep=$(find . -path './r2_fastqs/*' -print0 | cut -d '.' -f 2- ) || \
 R2_comma_sep=$(find . -path './r2_fastqs/*' -print0 | cut -d '.' -f 2- | tr '\0' ,)
 
