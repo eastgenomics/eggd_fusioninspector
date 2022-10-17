@@ -22,15 +22,19 @@ mkdir /home/dnanexus/r2_fastqs
 find ./in/r1_fastqs -type f -name "*R1*" -print0 | xargs -0 -I {} mv {} ./r1_fastqs
 find ./in/r2_fastqs -type f -name "*R2*" -print0 | xargs -0 -I {} mv {} ./r2_fastqs
 
-# add comma-separation only if there is more than 1 file
-# cut off preceding './' literal for each filename
-[[ $(find ./r1_fastqs -type f -name "*R1*" | wc -l ) == 1 ]] && \
-R1_comma_sep=$(find . -path './r1_fastqs/*' -print0 | cut -d '.' -f 2- ) || \
-R1_comma_sep=$(find . -path './r1_fastqs/*' -print0 | cut -d '.' -f 2- | tr '\0' ,)
+function make_fastq_comma_sep () {
+       # Format multiple fastqs into comma-sep. Cut off preceding '.' in name.
+       read=$1
+       fastq_dir=$2
+       [[ $(find $fastq_dir -type f -name "*$read*" | wc -l ) == 1 ]] && \
+       R_comma_sep=$(find . -path "$fastq_dir*" -print0 | cut -d '.' -f 2- ) || \
+       R_comma_sep=$(find . -path "$fastq_dir/*" -print0 | cut -d '.' -f 2- | tr '\0' ,)
+       echo "$R_comma_sep"
+}
 
-[[ $(find ./r2_fastqs -type f -name "*R2*" | wc -l ) == 1 ]] && \
-R2_comma_sep=$(find . -path './r2_fastqs/*' -print0 | cut -d '.' -f 2- ) || \
-R2_comma_sep=$(find . -path './r2_fastqs/*' -print0 | cut -d '.' -f 2- | tr '\0' ,)
+# set up 1 or more fastq files in a list
+R1_comma_sep=$(make_fastq_comma_sep "R1" "./r1_fastqs")
+R2_comma_sep=$(make_fastq_comma_sep "R2" "./r2_fastqs")
 
 # get names of fusion files for Docker
 known_fusions_name=$(find /home/dnanexus/in/known_fusions -type f -printf "%f\n")
