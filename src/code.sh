@@ -22,8 +22,15 @@ mkdir /home/dnanexus/r2_fastqs
 find ./in/r1_fastqs -type f -name "*R1*" -print0 | xargs -0 -I {} mv {} ./r1_fastqs
 find ./in/r2_fastqs -type f -name "*R2*" -print0 | xargs -0 -I {} mv {} ./r2_fastqs
 
-R1_comma_sep=$(find . -path './r1_fastqs/*' -print0 | tr '\0' ,)
-R2_comma_sep=$(find . -path './r2_fastqs/*' -print0 | tr '\0' ,)
+# add comma-separation only if there is more than 1 file
+# cut off preceding './' literal for each filename
+[[ $(find ./in/r1_fastqs -type f -name "*R1*" | wc ) = 1 ]] && \
+R1_comma_sep=$(find . -path './r1_fastqs/*' -print0 | cut -d '/' -f 1 ) || \
+R1_comma_sep=$(find . -path './r1_fastqs/*' -print0 | cut -d '/' -f 1 | tr '\0' ,)
+
+[[ $(find ./in/r1_fastqs -type f -name "*R2*" | wc ) = 1 ]] && \
+R2_comma_sep=$(find . -path './r2_fastqs/*' -print0 | cut -d '/' -f 1 ) || \
+R2_comma_sep=$(find . -path './r2_fastqs/*' -print0 | cut -d '/' -f 1 | tr '\0' ,)
 
 # get names of fusion files for Docker
 known_fusions_name=$(find /home/dnanexus/in/known_fusions -type f -printf "%f\n")
@@ -40,7 +47,7 @@ prefix=$(echo "$sr_predictions_name" | cut -d '.' -f 1)
 # TODO: sanity checking on lanes
 
 # Extracts the fusion pairs from the predictions file (unfiltered)
-cut -f 1 /home/dnanexus/in/sr_predictions/${sr_predictions_name} \
+cut -f 1 /home/dnanexus/in/sr_predictions/"${sr_predictions_name}" \
 | grep -v '#FusionName' > /home/dnanexus/in/sr_predictions/predicted_fusions.txt
 
 mark-section "run FusionInspector"
@@ -49,7 +56,7 @@ mark-section "run FusionInspector"
 sudo docker run -v "$(pwd)":/data --rm \
        "${DOCKER_IMAGE_ID}" \
        FusionInspector  \
-       --fusions /data/in/known_fusions/${known_fusions_name},/home/dnanexus/in/sr_predictions/predicted_fusions.txt \
+       --fusions /data/in/known_fusions/"${known_fusions_name}",/data/in/sr_predictions/predicted_fusions.txt \
        -O /data/out/fi_outputs \
        --left_fq /data/"${R1_comma_sep}" \
        --right_fq /data/"${R2_comma_sep}" \
