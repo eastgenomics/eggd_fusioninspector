@@ -61,7 +61,7 @@ sudo docker run -v "$(pwd)":/data --rm \
        --left_fq /data"${R1_comma_sep}" \
        --right_fq /data"${R2_comma_sep}" \
        --out_prefix "${prefix}"\
-       --genome_lib_dir /data/"${lib_dir}"/ctat_genome_lib_build_dir \
+       --genome_lib_dir /data"${lib_dir}"/ctat_genome_lib_build_dir \
        --vis \
        --include_Trinity \
        --examine_coding_effect \
