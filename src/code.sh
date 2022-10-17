@@ -3,9 +3,8 @@
 # Extracts a pair of genes from the genome, creates a mini-contig,
 # aligns reads to the mini-contig, and extracts the fusion reads as a separate tier for vsiualization
 
-
-# Output each line as it is executed (-x) and don't stop if any non zero exit codes are seen (+e)
-set -x +e
+# fail on any error
+set -exo pipefail
 
 mkdir -p out/fi_outputs/
 
@@ -22,19 +21,13 @@ mkdir /home/dnanexus/r2_fastqs
 find ./in/r1_fastqs -type f -name "*R1*" -print0 | xargs -0 -I {} mv {} ./r1_fastqs
 find ./in/r2_fastqs -type f -name "*R2*" -print0 | xargs -0 -I {} mv {} ./r2_fastqs
 
-function make_fastq_comma_sep () {
-       # Format multiple fastqs into comma-sep. Cut off preceding '.' in name.
-       read=$1
-       fastq_dir=$2
-       [[ $(find $fastq_dir -type f -name "*$read*" | wc -l ) == 1 ]] && \
-       R_comma_sep=$(find . -path "$fastq_dir*" -print0 | cut -d '.' -f 2- ) || \
-       R_comma_sep=$(find . -path "$fastq_dir/*" -print0 | cut -d '.' -f 2- | tr '\0' ,)
-       echo "$R_comma_sep"
-}
-
 # set up 1 or more fastq files in a list
-R1_comma_sep=$(make_fastq_comma_sep "R1" "./r1_fastqs")
-R2_comma_sep=$(make_fastq_comma_sep "R2" "./r2_fastqs")
+read_1=$(find ./r1_fastqs/ -type f -name "*" -name "*R1*.fq" -printf '%p,' | \
+sed 's/\.\///g' | sed -e 's/^/\/data\//')
+read_1=$(${read_1::-1})
+read_2=$(find ./r2_fastqs/ -type f -name "*" -name "*R2*.fq" -printf '%p,' | \
+sed 's/\.\///g' | sed -e 's/^/\/data//')
+read_2=$(${read_2::-1})
 
 # get names of fusion files for Docker
 known_fusions_name=$(find /home/dnanexus/in/known_fusions -type f -printf "%f\n")
@@ -62,8 +55,8 @@ sudo docker run -v "$(pwd)":/data --rm \
        FusionInspector  \
        --fusions /data/in/known_fusions/"${known_fusions_name}",/data/in/sr_predictions/predicted_fusions.txt \
        -O /data/out/fi_outputs \
-       --left_fq /data"${R1_comma_sep}" \
-       --right_fq /data"${R2_comma_sep}" \
+       --left_fq "${read_1}" \
+       --right_fq "${read_2}" \
        --out_prefix "${prefix}"\
        --genome_lib_dir /data"${lib_dir}"/ctat_genome_lib_build_dir \
        --vis \
