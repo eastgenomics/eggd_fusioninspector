@@ -25,12 +25,12 @@ find ./in/r2_fastqs -type f -name "*R2*" -print0 | xargs -0 -I {} mv {} ./r2_fas
 # add comma-separation only if there is more than 1 file
 # cut off preceding './' literal for each filename
 [[ $(find ./in/r1_fastqs -type f -name "*R1*" | wc ) = 1 ]] && \
-R1_comma_sep=$(find . -path './r1_fastqs/*' -print0 | cut -d '/' -f 1 ) || \
-R1_comma_sep=$(find . -path './r1_fastqs/*' -print0 | cut -d '/' -f 1 | tr '\0' ,)
+R1_comma_sep=$(find . -path './r1_fastqs/*' -print0 | cut -d '/' -f 2 ) || \
+R1_comma_sep=$(find . -path './r1_fastqs/*' -print0 | cut -d '/' -f 2 | tr '\0' ,)
 
 [[ $(find ./in/r1_fastqs -type f -name "*R2*" | wc ) = 1 ]] && \
-R2_comma_sep=$(find . -path './r2_fastqs/*' -print0 | cut -d '/' -f 1 ) || \
-R2_comma_sep=$(find . -path './r2_fastqs/*' -print0 | cut -d '/' -f 1 | tr '\0' ,)
+R2_comma_sep=$(find . -path './r2_fastqs/*' -print0 | cut -d '/' -f 2 ) || \
+R2_comma_sep=$(find . -path './r2_fastqs/*' -print0 | cut -d '/' -f 2 | tr '\0' ,)
 
 # get names of fusion files for Docker
 known_fusions_name=$(find /home/dnanexus/in/known_fusions -type f -printf "%f\n")
