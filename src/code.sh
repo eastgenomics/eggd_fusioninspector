@@ -11,8 +11,7 @@ mkdir -p out/fi_outputs/
 # download all inputs, untar plug-n-play resources, and get its path
 mark-section "download inputs"
 dx-download-all-inputs
-tar xf /home/dnanexus/in/genome_lib/*.tar.gz -C /home/dnanexus
-lib_dir=$(find . -type d -name "GR*plug-n-play" | cut -d '.' -f 2- )
+gzip -d /home/dnanexus/in/genome_lib/*
 
 # move each FASTQ into a more sensible directory
 # by default every fastq in the array goes into a numbered dir on its own
@@ -56,7 +55,7 @@ sudo docker run -v "$(pwd)":/data --rm \
        --left_fq "${read_1::-1}" \
        --right_fq "${read_2::-1}" \
        --out_prefix "${prefix}"\
-       --genome_lib_dir /data"${lib_dir}"/ctat_genome_lib_build_dir \
+       --genome_lib_dir /data/in/genome_lib/* \
        --vis \
        --include_Trinity \
        --examine_coding_effect \
