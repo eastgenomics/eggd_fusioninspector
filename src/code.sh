@@ -11,7 +11,8 @@ mkdir -p out/fi_outputs/
 # download all inputs, untar plug-n-play resources, and get its path
 mark-section "download inputs"
 dx-download-all-inputs
-gzip -d /home/dnanexus/in/genome_lib/*
+tar xf /home/dnanexus/in/genome_lib/*.tar.gz -C /home/dnanexus/
+lib_dir=$(find . -type d -name "GR*plug-n-play")
 
 # move each FASTQ into a more sensible directory
 # by default every fastq in the array goes into a numbered dir on its own
@@ -54,20 +55,20 @@ sudo docker run -v "$(pwd)":/data --rm \
        -O /data/out/fi_outputs \
        --left_fq "${read_1::-1}" \
        --right_fq "${read_2::-1}" \
-       --out_prefix "${prefix}"\
-       --genome_lib_dir /data/in/genome_lib/* \
+       --out_prefix "${prefix}" \
+       --genome_lib_dir "/data/${lib_dir}/ctat_genome_lib_build_dir" \
        --vis \
        --include_Trinity \
        --examine_coding_effect \
        --extract_fusion_reads_file "${prefix}".FusionInspector-pe_samples/fusion_reads
 
-# TODO: might not need code below - depends if prefix works as I think
-# mark-section "iterate over output files and add sample names"
-
-# for file in /home/dnanexus/${prefix} ; do 
-#        mv "$file" "${prefix}.${file}"; 
-# done
-
+mark-section "move all output files to a named directory, and add sample names"
+# create output directory to move to
+final_dir="/home/dnanexus/out/${prefix}_FusionInspector"
+mkdir -p "${final_dir}"
+# rename and move files
+find /home/dnanexus/out/fi_outputs -type f -name "*" -printf "%f\n" | \
+xargs -I{} mv /home/dnanexus/out/{} "${final_dir}"/"${prefix}"_{}
 mark-section "upload outputs"
 
 dx-upload-all-outputs --parallel
