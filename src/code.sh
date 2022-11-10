@@ -12,7 +12,7 @@ mkdir -p out/fi_outputs/
 mark-section "download inputs"
 dx-download-all-inputs
 tar xf /home/dnanexus/in/genome_lib/*.tar.gz -C /home/dnanexus/
-lib_dir=$(find . -type d -name "GR*plug-n-play")
+lib_dir=$(find . -type d -name "*CTAT_lib*")
 
 # move each FASTQ into a more sensible directory
 # by default every fastq in the array goes into a numbered dir on its own
@@ -38,8 +38,8 @@ DOCKER_IMAGE_ID=$(docker images --format="{{.Repository}} {{.ID}}" | grep "^trin
 # get the sample name from the chimeric file, then rename to generic
 prefix=$(echo "$sr_predictions_name" | cut -d '.' -f 1)
 
-# TODO: sanity checking on prefix
-# TODO: sanity checking on lanes
+# TODO: sanity checking on prefix - check all prefixes match
+# TODO: sanity checking on lanes - stop lane recurring more than once per read
 
 # Extracts the fusion pairs from the predictions file (unfiltered)
 cut -f 1 /home/dnanexus/in/sr_predictions/"${sr_predictions_name}" \
