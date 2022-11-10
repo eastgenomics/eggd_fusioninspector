@@ -14,6 +14,20 @@ Runs FusionInspector v2.8.0, a tool which in silico validates fusion predictions
 
 
 ## How does this app work?
+* Downloads all inputs and unzips/untars the STAR genome resource
+* Moves the FASTQ files into 'R1' and 'R2' directories
+* Formats arguments for FusionInspector: reads, known fusions, and STAR-Fusion predictions
+* Loads and runs the FusionInspector Docker image
+    * Arguments not already mentioned as inputs are: --vis, --include_Trinity, and --examine_coding_effect
+    * Production versions of this app will need to point to a controlled Docker image in 'references' on DNAnexus to ensure that the same version is run each time
+* Prefixes output file names with the sample name
+* Uploads the output files to DNA Nexus
 
 
 ## What does this app output?
+
+
+## Notes
+* This app is not ready for production use
+
+## This app was made by East GLH
