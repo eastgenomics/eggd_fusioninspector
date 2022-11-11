@@ -54,22 +54,19 @@
       "class": "file",
       "optional": false,
       "patterns": [
-        "*.tsv"
+        "*fusion_predictions.tsv"
       ],
       "help": "predictions.tsv file output from star fusion"
     },
     {
       "name": "genome_lib",
-      "label": "genome library",
+      "label": "genome_lib",
       "class": "file",
       "optional": false,
       "patterns": [
         "*.gz"
       ],
-      "suggestions":[
-        {"name":"GRCh37 Star Fusion Genome","value": {"$dnanexus_link": {"project": "project-Fv28zZQ4pgK1G8883KF254VY","id": "file-Fv2FF60428Xg8JFjJ8ZBX82z"}}}
-      ],
-      "help": "STAR genome resources"
+      "help": "A CTAT genome library, which is a reference file bundle required by Trinity CTAT tools"
     }
   ],
   "outputSpec": [

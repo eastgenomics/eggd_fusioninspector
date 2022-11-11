@@ -38,7 +38,7 @@ DOCKER_IMAGE_ID=$(docker images --format="{{.Repository}} {{.ID}}" | grep "^trin
 # get the sample name from the chimeric file, then rename to generic
 prefix=$(echo "$sr_predictions_name" | cut -d '.' -f 1)
 
-# TODO: sanity checking on prefix - check all prefixes match
+# TODO: sanity checking on prefix - check all prefixes match!
 # TODO: sanity checking on lanes - stop lane recurring more than once per read
 
 # Extracts the fusion pairs from the predictions file (unfiltered)
