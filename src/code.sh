@@ -53,8 +53,8 @@ sudo docker run -v "$(pwd)":/data --rm \
        FusionInspector  \
        --fusions /data/in/known_fusions/"${known_fusions_name}",/data/in/sr_predictions/predicted_fusions.txt \
        -O /data/out/fi_outputs \
-       --left_fq /data/"${read_1::-1}" \
-       --right_fq /data/"${read_2::-1}" \
+       --left_fq "${read_1::-1}" \
+       --right_fq "${read_2::-1}" \
        --out_prefix "${prefix}" \
        --genome_lib_dir "/data/${lib_dir}/ctat_genome_lib_build_dir" \
        --vis \
