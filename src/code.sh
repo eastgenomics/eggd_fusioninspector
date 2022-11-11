@@ -47,10 +47,6 @@ prefix=$(echo "$sr_predictions_name" | cut -d '.' -f 1)
 cut -f 1 /home/dnanexus/in/sr_predictions/"${sr_predictions_name}" \
 | grep -v '#FusionName' > /home/dnanexus/in/sr_predictions/predicted_fusions.txt
 
-# Set up fastq paths for Docker
-left_fastqs="${read_1::-1}"
-right_fastqs="${read_2::-1}"
-
 mark-section "run FusionInspector"
 
 # Runs fusion inspector using known_fusions and predicted_fusions files
@@ -59,8 +55,8 @@ sudo docker run -v "$(pwd)":/data --rm \
        FusionInspector  \
        --fusions /data/in/known_fusions/"${known_fusions_name}",/data/in/sr_predictions/predicted_fusions.txt \
        -O /data/out/fi_outputs \
-       --left_fq "${left_fastqs}" \
-       --right_fq "${right_fastqs}" \
+       --left_fq "${read_1}" \
+       --right_fq "${read_2}" \
        --out_prefix "${prefix}" \
        --genome_lib_dir "/data/${lib_dir}/ctat_genome_lib_build_dir" \
        --vis \
