@@ -40,7 +40,9 @@ DOCKER_IMAGE_ID=$(docker images --format="{{.Repository}} {{.ID}}" | grep "^trin
 # get the sample name from the chimeric file, then rename to generic
 prefix=$(echo "$sr_predictions_name" | cut -d '.' -f 1)
 
-# TODO: sanity checking on prefix - check all prefixes match!
+# TODO: sanity checking on prefix - check read prefixes match!
+
+
 # TODO: sanity checking on lanes - stop lane recurring more than once per read
 
 # Extracts the fusion pairs from the predictions file (unfiltered)
@@ -62,7 +64,7 @@ sudo docker run -v "$(pwd)":/data --rm \
        --vis \
        --include_Trinity \
        --examine_coding_effect \
-       --extract_fusion_reads_file "${prefix}".FusionInspector-pe_samples/fusion_reads
+       --extract_fusion_reads_file "${prefix}".FusionInspector_fusion_reads
 
 mark-section "move all output files to a named directory, and add sample names"
 # create output directory to move to
