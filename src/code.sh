@@ -31,9 +31,9 @@ read_2=$(find ./r2_fastqs/ -type f -name "*" -name "*R2*.fastq*" | \
 sed 's/\.\///g' | sed -e 's/^/\/data\//' | paste -sd, -)
 known_fusions=$(find ./known_fusions/ -type f -name "*" | \
 sed 's/\.\///g' | sed -e 's/^/\/data\//' | paste -sd, -)
-echo "$known_fusions"
 echo "$read_1"
 echo "$read_2"
+echo "$known_fusions"
 
 # slightly reformat the STAR-Fusion predicted fusions for Docker
 sr_predictions_name=$(find /home/dnanexus/in/sr_predictions -type f -printf "%f\n")
@@ -52,12 +52,15 @@ prefix=$(echo "$sr_predictions_name" | cut -d '.' -f 1)
 
 # TODO: sanity checking on lanes - stop lane recurring more than once per read
 
-
 # make temporary and final output dirs
 mkdir -p "/home/dnanexus/temp_out"
-mkdir -p "/home/dnanexus/out/fi_outputs"
-
-
+mkdir -p "/home/dnanexus/out/fi_abridged"
+mkdir -p "/home/dnanexus/out/fi_full"
+if [ "$include_trinity" = "true" ]; then
+       mkdir -p "/home/dnanexus/out/fi_trinity_fasta"
+       mkdir -p "/home/dnanexus/out/fi_trinity_gff"
+       mkdir -p "/home/dnanexus/out/fi_trinity_bed"
+fi
 
 if [ "$include_trinity" = "true" ]; then
        mark-section "run FusionInspector with Trinity de novo reconstruction"
@@ -91,13 +94,22 @@ else
               --extract_fusion_reads_file FusionInspector_fusion_reads
 fi
 
+mark-section "add sample names to results files and move to output directories"
 
+find /home/dnanexus/temp_out -type f -name "*finspector.FusionInspector.fusions.abridged.tsv" -printf "%f\n" | \
+xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_abridged/"${prefix}".{}
+find /home/dnanexus/temp_out -type f -name "*.final" -printf "%f\n" | \
+xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_full/"${prefix}".{}
 
-mark-section "add sample names to all files in the output directory"
+if [ "$include_trinity" = "true" ]; then
+       find /home/dnanexus/temp_out -type f -name "*finspector.gmap_trinity_GG.fusions.fasta" -printf "%f\n" | \
+       xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_trinity_fasta/"${prefix}".{}
+       find /home/dnanexus/temp_out -type f -name "finspector.gmap_trinity_GG.fusions.gff3" -printf "%f\n" | \
+       xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_trinity_gff/"${prefix}".{}
+       find /home/dnanexus/temp_out -type f -name "finspector.gmap_trinity_GG.fusions.gff3.bed.sorted.bed.gz" \
+       -printf "%f\n" | xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_trinity_bed/"${prefix}".{}
+fi
 
-# rename files and move files to output directories
-find /home/dnanexus/temp_out -type f -name "*" -printf "%f\n" | \
-xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_outputs/"${prefix}".{}
 mark-section "upload outputs"
 
 dx-upload-all-outputs --parallel

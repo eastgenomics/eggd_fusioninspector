@@ -75,11 +75,40 @@
   ],
   "outputSpec": [
     {
-      "name": "fi_outputs",
-      "label": "all fusion inspector outputs",
-      "class": "array:file",
-      "help": "FusionInspector outputs"
-      }
+      "name": "fi_full",
+      "label": "fi_full",
+      "class": "file",
+      "optional": false,
+      "help": "FusionInspector full output file"
+    },
+    {
+      "name": "fi_abridged",
+      "label": "fi_abridged",
+      "class": "file",
+      "optional": false,
+      "help": "FusionInspector abridged output file"
+    },
+    {
+      "name": "fi_trinity_fasta",
+      "label": "fi_trinity_fasta",
+      "class": "file",
+      "optional": true,
+      "help": "FASTA file of de novo assembled transcript sequences - generated if Trinity option is run"
+    },
+    {
+      "name": "fi_trinity_gff",
+      "label": "fi_trinity_gff",
+      "class": "file",
+      "optional": true,
+      "help": "GFF3 file of reconstructed fusion transcript alignments - generated if Trinity option is run"
+    },
+    {
+      "name": "fi_trinity_bed",
+      "label": "fi_trinity_bed",
+      "class": "file",
+      "optional": true,
+      "help": "BED file of reconstructed fusion transcript alignments - generated if Trinity option is run"
+    }
   ],
   "runSpec": {
     "timeoutPolicy": {
