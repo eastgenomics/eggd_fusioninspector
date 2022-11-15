@@ -44,7 +44,7 @@ cut -f 1 /home/dnanexus/in/sr_predictions/"${sr_predictions_name}" \
 docker load -i /home/dnanexus/in/fi_docker/*.tar.gz
 DOCKER_IMAGE_ID=$(docker images --format="{{.Repository}} {{.ID}}" | grep "^trinityctat/fusioninspector" | cut -d' ' -f2)
 
-# get the sample name from the chimeric file, then rename to generic
+# get the sample name from the chimeric file
 prefix=$(echo "$sr_predictions_name" | cut -d '.' -f 1)
 
 # TODO: sanity checking on prefix - check read prefixes match!
@@ -57,22 +57,41 @@ prefix=$(echo "$sr_predictions_name" | cut -d '.' -f 1)
 mkdir -p "/home/dnanexus/temp_out"
 mkdir -p "/home/dnanexus/out/fi_outputs"
 
-mark-section "run FusionInspector"
 
-# Runs fusion inspector using known_fusions and predicted_fusions files
-sudo docker run -v "$(pwd)":/data --rm \
-       "${DOCKER_IMAGE_ID}" \
-       FusionInspector  \
-       --fusions "${known_fusions}",/data/in/sr_predictions/predicted_fusions.txt \
-       -O "/data/temp_out" \
-       --left_fq "${read_1}" \
-       --right_fq "${read_2}" \
-       --out_prefix "${prefix}" \
-       --genome_lib_dir "/data/${lib_dir}/ctat_genome_lib_build_dir" \
-       --vis \
-       --include_Trinity \
-       --examine_coding_effect \
-       --extract_fusion_reads_file FusionInspector_fusion_reads
+
+if [ "$include_trinity" = "true" ]; then
+       mark-section "run FusionInspector with Trinity de novo reconstruction"
+       # Runs fusion inspector using known_fusions and predicted_fusions files
+       sudo docker run -v "$(pwd)":/data --rm \
+              "${DOCKER_IMAGE_ID}" \
+              FusionInspector  \
+              --fusions "${known_fusions}",/data/in/sr_predictions/predicted_fusions.txt \
+              -O "/data/temp_out" \
+              --left_fq "${read_1}" \
+              --right_fq "${read_2}" \
+              --out_prefix "${prefix}" \
+              --genome_lib_dir "/data/${lib_dir}/ctat_genome_lib_build_dir" \
+              --vis \
+              --include_Trinity \
+              --examine_coding_effect \
+              --extract_fusion_reads_file FusionInspector_fusion_reads
+else
+       mark-section "run FusionInspector without Trinity"
+       sudo docker run -v "$(pwd)":/data --rm \
+              "${DOCKER_IMAGE_ID}" \
+              FusionInspector  \
+              --fusions "${known_fusions}",/data/in/sr_predictions/predicted_fusions.txt \
+              -O "/data/temp_out" \
+              --left_fq "${read_1}" \
+              --right_fq "${read_2}" \
+              --out_prefix "${prefix}" \
+              --genome_lib_dir "/data/${lib_dir}/ctat_genome_lib_build_dir" \
+              --vis \
+              --examine_coding_effect \
+              --extract_fusion_reads_file FusionInspector_fusion_reads
+fi
+
+
 
 mark-section "add sample names to all files in the output directory"
 

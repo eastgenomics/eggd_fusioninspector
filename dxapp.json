@@ -11,9 +11,9 @@
     {
       "name": "fi_docker",
       "label": "fi_docker",
-      "help": "File ID of FusionInspector Docker image in DNA Nexus",
       "class": "file",
-      "optional": false
+      "optional": false,
+      "help": "File ID of FusionInspector Docker image in DNA Nexus"
     },
     {
       "name": "r1_fastqs",
@@ -23,7 +23,7 @@
       "patterns": [
         "*.fastq.gz"
       ],
-      "help": "The R1 FASTQ file(s)"
+      "help": "R1 FASTQ file(s) for a single sample"
     },
     {
       "name": "r2_fastqs",
@@ -33,7 +33,7 @@
       "patterns": [
         "*.fastq.gz"
       ],
-      "help": "The R2 FASTQ file(s)"
+      "help": "R2 FASTQ file(s) for a single sample"
     },
     {
       "name": "known_fusions",
@@ -43,7 +43,7 @@
       "patterns": [
         "*.txt"
       ],
-      "help": "Any number of .txt files of known fusions which should be searched for, regardless of whether or not they were found by STAR-Fusion"
+      "help": "Any number of .txt files of known fusions which should be searched for. First column must be in format 'geneA--geneB'. Additional columns should be tab-delimited and are not used by the app."
     },
     {
       "name": "sr_predictions",
@@ -53,7 +53,7 @@
       "patterns": [
         "*fusion_predictions.tsv"
       ],
-      "help": "predictions.tsv file output from star fusion"
+      "help": "predictions.tsv file output from STAR-Fusion"
     },
     {
       "name": "genome_lib",
@@ -64,6 +64,13 @@
         "*.gz"
       ],
       "help": "A CTAT genome library, which is a reference file bundle required by Trinity CTAT tools"
+    },
+    {
+      "name": "include_trinity",
+      "label": "include_trinity",
+      "class": "boolean",
+      "optional": false,
+      "help": "Set to 'true' to run Trinity de novo reconstruction of fusion transcripts from reads, or 'false' to skip this analysis"
     }
   ],
   "outputSpec": [
