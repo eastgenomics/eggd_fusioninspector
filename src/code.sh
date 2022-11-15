@@ -88,14 +88,22 @@ mark-section "add sample names to results files and move to output directories"
 
 find /home/dnanexus/temp_out -type f -name "*.FusionInspector.fusions.abridged.tsv" -printf "%f\n" | \
 xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_abridged/"${prefix}".{}
-find /home/dnanexus/temp_out -type f -name "*.final" -printf "%f\n" | \
+
+find /home/dnanexus/temp_out -type f -name "*.FusionInspector.fusions.final" -printf "%f\n" | \
 xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_full/"${prefix}".{}
+
+find /home/dnanexus/temp_out -type f -name "*fusion_inspector_web.html" -printf "%f\n" | \
+xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_html/"${prefix}".{}
+
+find /home/dnanexus/temp_out -type f -name 
 
 if [ "$include_trinity" = "true" ]; then
        find /home/dnanexus/temp_out -type f -name "*.gmap_trinity_GG.fusions.fasta" -printf "%f\n" | \
        xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_trinity_fasta/"${prefix}".{}
+
        find /home/dnanexus/temp_out -type f -name ".gmap_trinity_GG.fusions.gff3" -printf "%f\n" | \
        xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_trinity_gff/"${prefix}".{}
+
        find /home/dnanexus/temp_out -type f -name ".gmap_trinity_GG.fusions.gff3.bed.sorted.bed.gz" \
        -printf "%f\n" | xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_trinity_bed/"${prefix}".{}
 fi

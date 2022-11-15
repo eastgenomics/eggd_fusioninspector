@@ -23,7 +23,8 @@ Runs FusionInspector v2.8.0, a tool which in silico validates fusion predictions
 * Makes minor format corrections to the STAR-Fusion predictions
 * Loads and runs the FusionInspector Docker image:
     * The argument '--include_trinity' will be run in the command if the user selected it.
-    * Arguments not already mentioned as inputs are: --vis, and --examine_coding_effect
+    * Optional parameter '--vis' is run, to produce a HTML report of fusion results.
+    * Arguments not already mentioned as inputs are: --examine_coding_effect
     * Production versions of this app will need to point to a controlled Docker image in 'references' on DNAnexus to ensure that the same version is run each time
 * Prefixes output file names with the sample name
 * Uploads the output files to DNA Nexus
@@ -33,6 +34,7 @@ Runs FusionInspector v2.8.0, a tool which in silico validates fusion predictions
 * The following outputs are produced both with and without Trinity being run:
     * fi_full: a full set of outputs from FusionInspector.
     * fi_abridged: an abridged version of the FusionInspector output.
+    * fi_html: a HTML of fusion evidence which can be viewed in-browser.
 * The following outputs are only produced if 'include_trinity' is set to 'true' at run time:
     * fi_trinity_fasta: a FASTA file of de novo assembled transcript sequences
     * fi_trinity_gff: a GFF3 file of reconstructed fusion transcript alignments
