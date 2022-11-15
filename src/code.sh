@@ -53,7 +53,8 @@ prefix=$(echo "$sr_predictions_name" | cut -d '.' -f 1)
 # TODO: sanity checking on lanes - stop lane recurring more than once per read
 
 
-# make output dir
+# make temporary and final output dirs
+mkdir -p "/home/dnanexus/temp_out"
 mkdir -p "/home/dnanexus/out/fi_outputs"
 
 mark-section "run FusionInspector"
@@ -63,7 +64,7 @@ sudo docker run -v "$(pwd)":/data --rm \
        "${DOCKER_IMAGE_ID}" \
        FusionInspector  \
        --fusions "${known_fusions}",/data/in/sr_predictions/predicted_fusions.txt \
-       -O /data/out/fi_outputs \
+       -O "/data/temp_out" \
        --left_fq "${read_1}" \
        --right_fq "${read_2}" \
        --out_prefix "${prefix}" \
@@ -75,9 +76,9 @@ sudo docker run -v "$(pwd)":/data --rm \
 
 mark-section "add sample names to all files in the output directory"
 
-# rename files in the output directory, using mv
-find /home/dnanexus/out/fi_outputs -type f -name "*" -printf "%f\n" | \
-xargs -I{} mv /home/dnanexus/out/fi_outputs/{} /home/dnanexus/out/fi_outputs/"${prefix}"_{}
+# rename files and move files to output directories
+find /home/dnanexus/temp_out -type f -name "*" -printf "%f\n" | \
+xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_outputs/"${prefix}".{}
 mark-section "upload outputs"
 
 dx-upload-all-outputs --parallel
