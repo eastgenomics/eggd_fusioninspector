@@ -23,7 +23,7 @@
       "patterns": [
         "*.fastq.gz"
       ],
-      "help": ""
+      "help": "The R1 FASTQ file(s)"
     },
     {
       "name": "r2_fastqs",
@@ -33,20 +33,17 @@
       "patterns": [
         "*.fastq.gz"
       ],
-      "help": ""
+      "help": "The R2 FASTQ file(s)"
     },
     {
       "name": "known_fusions",
       "label": "known_fusions",
-      "class": "file",
+      "class": "array:file",
       "optional": false,
       "patterns": [
         "*.txt"
       ],
-      "help": "",
-      "suggestions":[
-        {"name":"Test Directory 2020 Fusions","value": {"$dnanexus_link": {"project": "project-Fv28zZQ4pgK1G8883KF254VY","id": "file-Fvxx0z04pgK02fK17f52x6g2"}}}
-      ]
+      "help": "Any number of .txt files of known fusions which should be searched for, regardless of whether or not they were found by STAR-Fusion"
     },
     {
       "name": "sr_predictions",
