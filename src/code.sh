@@ -49,6 +49,9 @@ prefix=$(echo "$sr_predictions_name" | cut -d '.' -f 1)
 cut -f 1 /home/dnanexus/in/sr_predictions/"${sr_predictions_name}" \
 | grep -v '#FusionName' > /home/dnanexus/in/sr_predictions/predicted_fusions.txt
 
+# make output dir
+mkdir -p "/home/dnanexus/out/fi_outputs"
+
 mark-section "run FusionInspector"
 
 # Runs fusion inspector using known_fusions and predicted_fusions files
@@ -64,15 +67,13 @@ sudo docker run -v "$(pwd)":/data --rm \
        --vis \
        --include_Trinity \
        --examine_coding_effect \
-       --extract_fusion_reads_file "${prefix}".FusionInspector_fusion_reads
+       --extract_fusion_reads_file FusionInspector_fusion_reads
 
-mark-section "move all output files to a named directory, and add sample names"
-# create output directory to move to
-final_dir="/home/dnanexus/out/${prefix}_FusionInspector"
-mkdir -p "${final_dir}"
-# rename and move files
+mark-section "add sample names to all files in the output directory"
+
+# rename files in the output directory, using mv
 find /home/dnanexus/out/fi_outputs -type f -name "*" -printf "%f\n" | \
-xargs -I{} mv /home/dnanexus/out/{} "${final_dir}"/"${prefix}"_{}
+xargs -I{} mv /home/dnanexus/out/fi_outputs/{} /home/dnanexus/out/fi_outputs/"${prefix}"_{}
 mark-section "upload outputs"
 
 dx-upload-all-outputs --parallel
