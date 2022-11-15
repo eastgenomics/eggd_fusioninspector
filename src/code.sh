@@ -11,7 +11,7 @@ mkdir -p out/fi_outputs/
 # download all inputs, untar plug-n-play resources, and get its path
 mark-section "download inputs and set up initial directories"
 dx-download-all-inputs
-tar xf /home/dnanexus/in/genome_lib/*.tar.gz -C /home/dnanexus/
+tar -xf /home/dnanexus/in/genome_lib/*.tar.gz -C /home/dnanexus/
 lib_dir=$(find . -type d -name "*CTAT_lib*")
 
 # move array:file uploads into more sensible directories
@@ -31,9 +31,6 @@ read_2=$(find ./r2_fastqs/ -type f -name "*" -name "*R2*.fastq*" | \
 sed 's/\.\///g' | sed -e 's/^/\/data\//' | paste -sd, -)
 known_fusions=$(find ./known_fusions/ -type f -name "*" | \
 sed 's/\.\///g' | sed -e 's/^/\/data\//' | paste -sd, -)
-echo "$read_1"
-echo "$read_2"
-echo "$known_fusions"
 
 # slightly reformat the STAR-Fusion predicted fusions for Docker
 sr_predictions_name=$(find /home/dnanexus/in/sr_predictions -type f -printf "%f\n")
@@ -53,60 +50,53 @@ prefix=$(echo "$sr_predictions_name" | cut -d '.' -f 1)
 # TODO: sanity checking on lanes - stop lane recurring more than once per read
 
 # make temporary and final output dirs
-mkdir -p "/home/dnanexus/temp_out"
+mkdir "/home/dnanexus/temp_out"
 mkdir -p "/home/dnanexus/out/fi_abridged"
-mkdir -p "/home/dnanexus/out/fi_full"
+mkdir "/home/dnanexus/out/fi_full"
 if [ "$include_trinity" = "true" ]; then
-       mkdir -p "/home/dnanexus/out/fi_trinity_fasta"
-       mkdir -p "/home/dnanexus/out/fi_trinity_gff"
-       mkdir -p "/home/dnanexus/out/fi_trinity_bed"
+       mkdir "/home/dnanexus/out/fi_trinity_fasta"
+       mkdir "/home/dnanexus/out/fi_trinity_gff"
+       mkdir "/home/dnanexus/out/fi_trinity_bed"
 fi
 
+# set up the FusionInspector arguments 
+fi_base_args="--fusions ${known_fusions},/data/in/sr_predictions/predicted_fusions.txt \
+              -O /data/temp_out \
+              --left_fq ${read_1} \
+              --right_fq ${read_2} \
+              --out_prefix ${prefix} \
+              --genome_lib_dir /data/${lib_dir}/ctat_genome_lib_build_dir \
+              --vis \
+              --examine_coding_effect \
+              --extract_fusion_reads_file FusionInspector_fusion_reads"
+
+# add an arg to run Trinity if requested by user 
 if [ "$include_trinity" = "true" ]; then
        mark-section "run FusionInspector with Trinity de novo reconstruction"
-       # Runs fusion inspector using known_fusions and predicted_fusions files
-       sudo docker run -v "$(pwd)":/data --rm \
-              "${DOCKER_IMAGE_ID}" \
-              FusionInspector  \
-              --fusions "${known_fusions}",/data/in/sr_predictions/predicted_fusions.txt \
-              -O "/data/temp_out" \
-              --left_fq "${read_1}" \
-              --right_fq "${read_2}" \
-              --out_prefix "${prefix}" \
-              --genome_lib_dir "/data/${lib_dir}/ctat_genome_lib_build_dir" \
-              --vis \
-              --include_Trinity \
-              --examine_coding_effect \
-              --extract_fusion_reads_file FusionInspector_fusion_reads
+       fi_base_args="${fi_base_args} --include_trinity"
 else
        mark-section "run FusionInspector without Trinity"
-       sudo docker run -v "$(pwd)":/data --rm \
-              "${DOCKER_IMAGE_ID}" \
-              FusionInspector  \
-              --fusions "${known_fusions}",/data/in/sr_predictions/predicted_fusions.txt \
-              -O "/data/temp_out" \
-              --left_fq "${read_1}" \
-              --right_fq "${read_2}" \
-              --out_prefix "${prefix}" \
-              --genome_lib_dir "/data/${lib_dir}/ctat_genome_lib_build_dir" \
-              --vis \
-              --examine_coding_effect \
-              --extract_fusion_reads_file FusionInspector_fusion_reads
 fi
+
+# run FusionInspector
+sudo docker run -v "$(pwd)":/data --rm \
+       "${DOCKER_IMAGE_ID}" \
+       FusionInspector  \
+       "${fi_base_args}" 
 
 mark-section "add sample names to results files and move to output directories"
 
-find /home/dnanexus/temp_out -type f -name "*finspector.FusionInspector.fusions.abridged.tsv" -printf "%f\n" | \
+find /home/dnanexus/temp_out -type f -name "*.FusionInspector.fusions.abridged.tsv" -printf "%f\n" | \
 xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_abridged/"${prefix}".{}
 find /home/dnanexus/temp_out -type f -name "*.final" -printf "%f\n" | \
 xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_full/"${prefix}".{}
 
 if [ "$include_trinity" = "true" ]; then
-       find /home/dnanexus/temp_out -type f -name "*finspector.gmap_trinity_GG.fusions.fasta" -printf "%f\n" | \
+       find /home/dnanexus/temp_out -type f -name "*.gmap_trinity_GG.fusions.fasta" -printf "%f\n" | \
        xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_trinity_fasta/"${prefix}".{}
-       find /home/dnanexus/temp_out -type f -name "finspector.gmap_trinity_GG.fusions.gff3" -printf "%f\n" | \
+       find /home/dnanexus/temp_out -type f -name ".gmap_trinity_GG.fusions.gff3" -printf "%f\n" | \
        xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_trinity_gff/"${prefix}".{}
-       find /home/dnanexus/temp_out -type f -name "finspector.gmap_trinity_GG.fusions.gff3.bed.sorted.bed.gz" \
+       find /home/dnanexus/temp_out -type f -name ".gmap_trinity_GG.fusions.gff3.bed.sorted.bed.gz" \
        -printf "%f\n" | xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_trinity_bed/"${prefix}".{}
 fi
 
