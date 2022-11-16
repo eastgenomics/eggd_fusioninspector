@@ -121,7 +121,7 @@ fusion_ins="docker run -v ${wd}:/data --rm \
 # run FusionInspector, adding an arg to run Trinity if requested by user 
 if [ "$include_trinity" = "true" ]; then
        mark-section "run FusionInspector with Trinity de novo reconstruction"
-       fusion_ins="${fusion_ins} --include_trinity"
+       fusion_ins="${fusion_ins} --include_Trinity"
        eval "${fusion_ins}"
 else
        mark-section "run FusionInspector without Trinity"
