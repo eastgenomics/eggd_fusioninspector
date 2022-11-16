@@ -105,30 +105,28 @@ if [ "$include_trinity" = "true" ]; then
        mkdir "/home/dnanexus/out/fi_trinity_bed"
 fi
 
-# set up the FusionInspector arguments 
-fi_base_args="--fusions ${known_fusions},/data/in/sr_predictions/predicted_fusions.txt \
-              -O /data/temp_out \
-              --left_fq ${read_1} \
-              --right_fq ${read_2} \
-              --out_prefix ${prefix} \
-              --genome_lib_dir /data/${lib_dir}/ctat_genome_lib_build_dir \
-              --vis \
-              --examine_coding_effect \
-              --extract_fusion_reads_file FusionInspector_fusion_reads"
+# set up the FusionInspector command 
+wd="$(pwd)"
+fusion_ins="docker run -v ${wd}:/data --rm \
+       ${DOCKER_IMAGE_ID} \
+       FusionInspector  \
+       --fusions ${known_fusions},/data/in/sr_predictions/predicted_fusions.txt \
+       --right_fq ${read_2} \
+       --out_prefix ${prefix} \
+       --genome_lib_dir /data/${lib_dir}/ctat_genome_lib_build_dir \
+       --vis \
+       --examine_coding_effect \
+       --extract_fusion_reads_file FusionInspector_fusion_reads"
 
-# add an arg to run Trinity if requested by user 
+# run FusionInspector, adding an arg to run Trinity if requested by user 
 if [ "$include_trinity" = "true" ]; then
        mark-section "run FusionInspector with Trinity de novo reconstruction"
-       fi_base_args="${fi_base_args} --include_trinity"
+       fusion_ins="${fusion_ins} --include_trinity"
+       eval "${fusion_ins}"
 else
        mark-section "run FusionInspector without Trinity"
+       eval "${fusion_ins}"
 fi
-
-# run FusionInspector
-sudo docker run -v "$(pwd)":/data --rm \
-       "${DOCKER_IMAGE_ID}" \
-       FusionInspector  \
-       "${fi_base_args}" 
 
 mark-section "move results files to their output directories"
 
