@@ -47,11 +47,14 @@ prefix=$(echo "$sr_predictions_name" | cut -d '.' -f 1)
 
 ## Tests
 # Check that there are the same number of R1s as R2s
-R1=($(ls ./r1_fastqs/*R1*))
-R2=($(ls ./r2_fastqs/*R2*))
-if [[ ${#R1[@]} -ne ${#R2[@]} ]]
-  then echo "The number of R1 and R2 files for this sample are not equal"
-  exit 1
+cd /home/dnanexus/r1_fastqs
+R1=($(ls *R1*))
+cd /home/dnanexus/r2_fastqs
+R2=($(ls *R2*))
+cd /home/dnanexus
+if [[ ${#R1[@]} -ne ${#R2[@]} ]]; then 
+       echo "The number of R1 and R2 files for this sample are not equal"
+       exit 1
 fi
 
 # Check that each R1 has a matching R2
@@ -66,6 +69,10 @@ _trim_fastq_endings () {
               export fastq_suffix
        elif [[ "${fastq_array[1]}" == *".fq.gz" ]]; then
               fastq_suffix=".fq.gz"
+              export fastq_suffix
+       else
+              echo "Suffixes of fastq files not recognised as .fq.gz or .fastq.gz"
+              exit 1
        fi
        for i in "${!fastq_array[@]}"; do
               fastq_array[$i]=${fastq_array[$i]//$read_to_cut/};
@@ -79,9 +86,10 @@ R2_test=$(_trim_fastq_endings "R2" ${R2[@]})
 
 # Test that when "R1" and "R2" are removed the two arrays have identical file names
 for i in "${!R1_test[@]}"; do
-       if [[ ! "${R2_test}" =~ "${R1_test[$i]}" ]];then 
+       if [[ ! "${R2_test}" =~ "${R1_test[$i]}" ]]; then 
               echo "Each R1 FASTQ does not appear to have a matching R2 FASTQ"
-              exit 1
+              echo "${R2_test} ${R1_test[$i]}"
+              exit 1 
        fi
 done
 
