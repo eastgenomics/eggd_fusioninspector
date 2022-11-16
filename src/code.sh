@@ -44,10 +44,48 @@ DOCKER_IMAGE_ID=$(docker images --format="{{.Repository}} {{.ID}}" | grep "^trin
 # get the sample name from the chimeric file
 prefix=$(echo "$sr_predictions_name" | cut -d '.' -f 1)
 
-# TODO: sanity checking on prefix - check read prefixes match!
 
+## Tests
+# Check that there are the same number of R1s as R2s
+R1=($(ls ./r1_fastqs/*R1*))
+R2=($(ls ./r2_fastqs/*R2*))
+if [[ ${#R1[@]} -ne ${#R2[@]} ]]
+  then echo "The number of R1 and R2 files for this sample are not equal"
+  exit 1
+fi
 
-# TODO: sanity checking on lanes - stop lane recurring more than once per read
+# Check that each R1 has a matching R2
+# Remove "R1" and "R2" and the file suffix from all file names
+_trim_fastq_endings () {
+       # Trims the endings off R1 or R2 file names in an array, and returns as an array.
+       # Identify and cut off suffixes. Export suffix for later use.
+       local fastq_array=("$@")
+       local read_to_cut=$1
+       if [[ "${fastq_array[1]}" == *".fastq.gz" ]]; then
+              fastq_suffix=".fastq.gz"
+              export fastq_suffix
+       elif [[ "${fastq_array[1]}" == *".fq.gz" ]]; then
+              fastq_suffix=".fq.gz"
+       fi
+       for i in "${!fastq_array[@]}"; do
+              fastq_array[$i]=${fastq_array[$i]//$read_to_cut/};
+              fastq_array[$i]=${fastq_array[$i]//$fastq_suffix/};
+       done
+       echo ${fastq_array[@]}
+}
+
+R1_test=$(_trim_fastq_endings "R1" ${R1[@]})
+R2_test=$(_trim_fastq_endings "R2" ${R2[@]})
+
+# Test that when "R1" and "R2" are removed the two arrays have identical file names
+for i in "${!R1_test[@]}"; do
+       if [[ ! "${R2_test}" =~ "${R1_test[$i]}" ]];then 
+              echo "Each R1 FASTQ does not appear to have a matching R2 FASTQ"
+              exit 1
+       fi
+done
+
+# TODO: Test that the start of the read files, begin with the expected 'prefix' taken from the STAR-Fusion predictions
 
 # make temporary and final output dirs
 mkdir "/home/dnanexus/temp_out"
@@ -115,4 +153,3 @@ mark-section "upload the outputs"
 dx-upload-all-outputs --parallel
 
 mark-success
-
