@@ -84,33 +84,33 @@ sudo docker run -v "$(pwd)":/data --rm \
        FusionInspector  \
        "${fi_base_args}" 
 
-mark-section "add sample names to results files and move to output directories"
+mark-section "move results files to their output directories"
 
 find /home/dnanexus/temp_out -type f -name "*.FusionInspector.fusions.abridged.tsv" -printf "%f\n" | \
-xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_abridged/"${prefix}".{}
+xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_abridged/{}
 
 find /home/dnanexus/temp_out -type f -name "*.FusionInspector.fusions.tsv" -printf "%f\n" | \
-xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_full/"${prefix}".{}
+xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_full/{}
 
 find /home/dnanexus/temp_out -type f -name "*.FusionInspector.fusions.abridged.tsv.coding_effect" -printf "%f\n" | \
-xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_coding/"${prefix}".{} 
+xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_coding/{} 
 
 find /home/dnanexus/temp_out -type f -name "*.fusion_inspector_web.html" -printf "%f\n" | \
-xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_html/"${prefix}".{}
+xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_html/{}
 
 
 if [ "$include_trinity" = "true" ]; then
        find /home/dnanexus/temp_out -type f -name "*.gmap_trinity_GG.fusions.fasta" -printf "%f\n" | \
-       xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_trinity_fasta/"${prefix}".{}
+       xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_trinity_fasta/{}
 
-       find /home/dnanexus/temp_out -type f -name ".gmap_trinity_GG.fusions.gff3" -printf "%f\n" | \
-       xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_trinity_gff/"${prefix}".{}
+       find /home/dnanexus/temp_out -type f -name "*.gmap_trinity_GG.fusions.gff3" -printf "%f\n" | \
+       xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_trinity_gff/{}
 
-       find /home/dnanexus/temp_out -type f -name ".gmap_trinity_GG.fusions.gff3.bed.sorted.bed.gz" \
-       -printf "%f\n" | xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_trinity_bed/"${prefix}".{}
+       find /home/dnanexus/temp_out -type f -name "*.gmap_trinity_GG.fusions.gff3.bed.sorted.bed.gz" \
+       -printf "%f\n" | xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_trinity_bed/{}
 fi
 
-mark-section "upload outputs"
+mark-section "upload the outputs"
 
 dx-upload-all-outputs --parallel
 
