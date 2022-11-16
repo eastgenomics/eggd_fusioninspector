@@ -21,28 +21,29 @@ https://github.com/FusionInspector/FusionInspector/wiki
 
 
 ## How does this app work?
-* Downloads all inputs and unzips/untars the STAR genome resource
-* Moves the FASTQ files into 'R1' and 'R2' directories, and known fusions into a 'known_fusion' directory
-* Formats arguments for FusionInspector: reads, known fusions, and STAR-Fusion predictions
-* Makes minor format corrections to the STAR-Fusion predictions
+* Downloads all inputs and unzips/untars the STAR genome resource.
+* Moves the FASTQ files into 'R1' and 'R2' directories, and known fusions into a 'known_fusion' directory.
+* Formats arguments for FusionInspector: reads, known fusions, and STAR-Fusion predictions.
+* Makes minor format corrections to the STAR-Fusion predictions.
 * Loads and runs the FusionInspector Docker image:
     * The argument '--include_trinity' will be run in the command if the user selected it.
     * Optional parameter '--vis' is run, to produce a HTML report of fusion results.
-    * Arguments not already mentioned as inputs are: --examine_coding_effect
-    * Production versions of this app will need to point to a controlled Docker image in 'references' on DNAnexus to ensure that the same version is run each time
-* Prefixes output file names with the sample name
-* Uploads the output files to DNA Nexus
+    * Optional parameter '--examine_coding_effect' is run, to produce a tsv file with details of possible coding region impacts of each fusion.
+    * Production versions of this app will need to point to a controlled Docker image in 'references' on DNAnexus to ensure that the same version is run each time.
+* Prefixes output file names with the sample name.
+* Uploads the output files to DNA Nexus.
 
 
 ## What does this app output?
 * The following outputs are produced both with and without Trinity being run:
-    * fi_full: a full set of outputs from FusionInspector.
-    * fi_abridged: an abridged version of the FusionInspector output.
+    * fi_full: a full set of outputs from FusionInspector, as a tsv file.
+    * fi_abridged: an abridged version of the FusionInspector output, as a tsv file.
+    * fi_coding: the abridged FusionInspector output containing additional information about potential coding effect, a tsv file 
     * fi_html: a HTML of fusion evidence which can be viewed in-browser.
 * The following outputs are only produced if 'include_trinity' is set to 'true' at run time:
-    * fi_trinity_fasta: a FASTA file of de novo assembled transcript sequences
-    * fi_trinity_gff: a GFF3 file of reconstructed fusion transcript alignments
-    * fi_trinity_bed: a BED file of reconstructed fusion transcript alignments
+    * fi_trinity_fasta: a FASTA file of de novo assembled transcript sequences.
+    * fi_trinity_gff: a GFF3 file of reconstructed fusion transcript alignments.
+    * fi_trinity_bed: a BED file of reconstructed fusion transcript alignments.
 
 ## Notes
 * This app is not ready for production use
