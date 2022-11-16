@@ -68,7 +68,7 @@ fi_base_args="--fusions ${known_fusions},/data/in/sr_predictions/predicted_fusio
               --genome_lib_dir /data/${lib_dir}/ctat_genome_lib_build_dir \
               --vis \
               --examine_coding_effect \
-              --extract_fusion_reads_file FusionInspector_fusion_reads"
+              --extract_fusion_reads_file FusionInspector_fusion_reads
 
 # add an arg to run Trinity if requested by user 
 if [ "$include_trinity" = "true" ]; then
