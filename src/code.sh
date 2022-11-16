@@ -111,12 +111,14 @@ fusion_ins="docker run -v ${wd}:/data --rm \
        ${DOCKER_IMAGE_ID} \
        FusionInspector  \
        --fusions ${known_fusions},/data/in/sr_predictions/predicted_fusions.txt \
+       -O /data/temp_out \
+       --left_fq ${read_1} \
        --right_fq ${read_2} \
        --out_prefix ${prefix} \
        --genome_lib_dir /data/${lib_dir}/ctat_genome_lib_build_dir \
        --vis \
        --examine_coding_effect \
-       --extract_fusion_reads_file FusionInspector_fusion_reads"
+       --extract_fusion_reads_file ${prefix}.fusion_reads"
 
 # run FusionInspector, adding an arg to run Trinity if requested by user 
 if [ "$include_trinity" = "true" ]; then
