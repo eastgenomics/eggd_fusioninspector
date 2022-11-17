@@ -95,6 +95,7 @@ done
 
 # TODO: Test that the start of the read files, begin with the expected 'prefix' taken from the STAR-Fusion predictions
 
+
 # make temporary and final output dirs
 mkdir "/home/dnanexus/temp_out"
 mkdir -p "/home/dnanexus/out/fi_abridged"
@@ -107,6 +108,10 @@ if [ "$include_trinity" = "true" ]; then
        mkdir "/home/dnanexus/out/fi_trinity_bed"
 fi
 
+# Obtain instance information to set CPU flexibly
+INSTANCE=$(dx describe --json $DX_JOB_ID | jq -r '.instanceType')  # Extract instance type
+NUMBER_THREADS=${INSTANCE##*_x}
+
 # set up the FusionInspector command 
 wd="$(pwd)"
 fusion_ins="docker run -v ${wd}:/data --rm \
@@ -114,6 +119,7 @@ fusion_ins="docker run -v ${wd}:/data --rm \
        FusionInspector  \
        --fusions ${known_fusions},/data/in/sr_predictions/predicted_fusions.txt \
        -O /data/temp_out \
+       -CPU ${NUMBER_THREADS} \
        --left_fq ${read_1} \
        --right_fq ${read_2} \
        --out_prefix ${prefix} \
