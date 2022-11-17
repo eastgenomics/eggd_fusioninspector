@@ -71,6 +71,13 @@
       "class": "boolean",
       "optional": false,
       "help": "Set to 'true' to run Trinity de novo reconstruction of fusion transcripts from reads, or 'false' to skip this analysis"
+    },
+    {
+      "name": "opt_parameters",
+      "label": "Optional additional parameters to be used by FusionInspector",
+      "help": "The optional additional parameters and flags for FusionInspector. Should be space-delimated, and in the format --parameter-name value e.g. --alignIntronMax 100000 --alignSJstitchMismatchNmax 5 -1 5 5",
+      "class": "string",
+      "optional": true
     }
   ],
   "outputSpec": [

@@ -128,15 +128,21 @@ fusion_ins="docker run -v ${wd}:/data --rm \
        --examine_coding_effect \
        --extract_fusion_reads_file ${prefix}.fusion_reads"
 
-# run FusionInspector, adding an arg to run Trinity if requested by user 
+
+# run FusionInspector, adding an arg to run Trinity if requested by user, and adding optional user-entered parameters if any 
 if [ "$include_trinity" = "true" ]; then
-       mark-section "run FusionInspector with Trinity de novo reconstruction"
+       mark-section "Adding Trinity de novo reconstruction option to FusionInspector command"
        fusion_ins="${fusion_ins} --include_Trinity"
-       eval "${fusion_ins}"
-else
-       mark-section "run FusionInspector without Trinity"
-       eval "${fusion_ins}"
 fi
+
+if [ -n "$parameters" ]; then
+       mark-section "Adding additional user-entered parameters to FusionInspector command"
+       fusion_ins="${fusion_ins} ${parameters}"
+fi
+
+mark-section "Running FusionInspector"
+eval "${fusion_ins}"
+
 
 mark-section "move results files to their output directories"
 
