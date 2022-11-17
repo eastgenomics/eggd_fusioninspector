@@ -99,6 +99,8 @@ done
 mkdir "/home/dnanexus/temp_out"
 mkdir -p "/home/dnanexus/out/fi_abridged"
 mkdir "/home/dnanexus/out/fi_full"
+mkdir "/home/dnanexus/out/fi_coding/"
+mkdir "/home/dnanexus/out/fi_html"
 if [ "$include_trinity" = "true" ]; then
        mkdir "/home/dnanexus/out/fi_trinity_fasta"
        mkdir "/home/dnanexus/out/fi_trinity_gff"
@@ -157,7 +159,5 @@ if [ "$include_trinity" = "true" ]; then
 fi
 
 mark-section "upload the outputs"
-
 dx-upload-all-outputs --parallel
-
 mark-success
