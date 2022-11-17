@@ -99,7 +99,7 @@ done
 mkdir "/home/dnanexus/temp_out"
 mkdir -p "/home/dnanexus/out/fi_abridged"
 mkdir "/home/dnanexus/out/fi_full"
-mkdir "/home/dnanexus/out/fi_coding/"
+mkdir "/home/dnanexus/out/fi_coding"
 mkdir "/home/dnanexus/out/fi_html"
 if [ "$include_trinity" = "true" ]; then
        mkdir "/home/dnanexus/out/fi_trinity_fasta"
