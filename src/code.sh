@@ -96,9 +96,10 @@ done
 # Test that the start of the read files (without lanes), begin with the expected 'prefix' taken from the 
 #STAR-Fusion predictions
 _trim_lanes_compare_prefix () {
+       # Takes an array of FASTQ names with reads and file-endings already cut out.
        # Identify and cut off the lane suffixes. Compare rest of name to StarFusion file prefix. Exit if mismatch.
        # Expects lanes to be in the format '_L00(digit)__(digit)(digit)(digit)'
-       # Post-lane digits are left over from when read was cut out.
+       # The three post-lane digits are left over from when read was cut out.
        local fastq_array=("$@")
        local prefix=$1
        for i in "${fastq_array[@]}"; do
@@ -110,8 +111,8 @@ _trim_lanes_compare_prefix () {
        done
 }
 
-_trim_lanes_compare_prefix "$prefix" ${R1[@]}
-_trim_lanes_compare_prefix "$prefix" ${R2[@]}
+_trim_lanes_compare_prefix "$prefix" ${R1_test}
+_trim_lanes_compare_prefix "$prefix" ${R2_test}
 
 
 # make temporary and final output dirs
