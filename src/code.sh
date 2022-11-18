@@ -1,12 +1,7 @@
 #!/bin/bash
-# fusion_inspector 1.0.0
-# Extracts a pair of genes from the genome, creates a mini-contig,
-# aligns reads to the mini-contig, and extracts the fusion reads as a separate tier for vsiualization
 
 # fail on any error
 set -exo pipefail
-
-mkdir -p out/fi_outputs/
 
 # download all inputs, untar plug-n-play resources, and get its path
 mark-section "Download inputs and set up initial directories and values"
