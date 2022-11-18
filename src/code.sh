@@ -9,7 +9,7 @@ set -exo pipefail
 mkdir -p out/fi_outputs/
 
 # download all inputs, untar plug-n-play resources, and get its path
-mark-section "download inputs and set up initial directories"
+mark-section "Download inputs and set up initial directories and values"
 dx-download-all-inputs
 tar -xf /home/dnanexus/in/genome_lib/*.tar.gz -C /home/dnanexus/
 lib_dir=$(find . -type d -name "*CTAT_lib*")
@@ -44,8 +44,13 @@ DOCKER_IMAGE_ID=$(docker images --format="{{.Repository}} {{.ID}}" | grep "^trin
 # get the sample name from the chimeric file
 prefix=$(echo "$sr_predictions_name" | cut -d '.' -f 1)
 
+# Obtain instance information to set CPU flexibly
+INSTANCE=$(dx describe --json $DX_JOB_ID | jq -r '.instanceType')  # Extract instance type
+NUMBER_THREADS=${INSTANCE##*_x}
+
 
 ## Tests
+mark-section "Running tests to sense-check R1/R2 arrays and file prefixes"
 # Check that there are the same number of R1s as R2s
 cd /home/dnanexus/r1_fastqs
 R1=($(ls *R1*))
@@ -53,7 +58,7 @@ cd /home/dnanexus/r2_fastqs
 R2=($(ls *R2*))
 cd /home/dnanexus
 if [[ ${#R1[@]} -ne ${#R2[@]} ]]; then 
-       echo "The number of R1 and R2 files for this sample are not equal"
+       echo "The number of R1 and R2 files for this sample are not equal - exiting"
        exit 1
 fi
 
@@ -71,7 +76,7 @@ _trim_fastq_endings () {
               fastq_suffix=".fq.gz"
               export fastq_suffix
        else
-              echo "Suffixes of fastq files not recognised as .fq.gz or .fastq.gz"
+              echo "Suffixes of fastq files not recognised as .fq.gz or .fastq.gz - exiting"
               exit 1
        fi
        for i in "${!fastq_array[@]}"; do
@@ -93,10 +98,28 @@ for i in "${!R1_test[@]}"; do
        fi
 done
 
-# TODO: Test that the start of the read files, begin with the expected 'prefix' taken from the STAR-Fusion predictions
+# Test that the start of the read files (without lanes), begin with the expected 'prefix' taken from the 
+#STAR-Fusion predictions
+__trim_lanes_compare_prefix () {
+       # Identify and cut off lane suffixes. Compare rest of name to StarFusion file prefix. Exit if mismatch.
+       # Expects lanes to always be at the very end of the string after reads removed, and in the format '_L00(digit)'
+       local fastq_array=("$@")
+       local prefix=$1
+       for i in "${fastq_array[@]}"; do
+              lane_cut_off=$(echo $i | sed -r 's/_L00[1-9]$//g')
+              if [[ ! "$lane_cut_off" == "$prefix" ]]; then 
+                     echo "Start of filename does not match expected prefix taken from STAR-Fusion file: $i - exiting"  
+                     exit 1
+              fi
+       done
+}
+
+_trim_lanes_compare_prefix "$prefix" ${R1[@]}
+_trim_lanes_compare_prefix "$prefix" ${R2[@]}
 
 
 # make temporary and final output dirs
+mark-section "Make temporary and final output directories"
 mkdir "/home/dnanexus/temp_out"
 mkdir -p "/home/dnanexus/out/fi_abridged"
 mkdir "/home/dnanexus/out/fi_full"
@@ -108,11 +131,9 @@ if [ "$include_trinity" = "true" ]; then
        mkdir "/home/dnanexus/out/fi_trinity_bed"
 fi
 
-# Obtain instance information to set CPU flexibly
-INSTANCE=$(dx describe --json $DX_JOB_ID | jq -r '.instanceType')  # Extract instance type
-NUMBER_THREADS=${INSTANCE##*_x}
 
 # set up the FusionInspector command 
+mark-section "Set up basic FusionInspector command prior to running"
 wd="$(pwd)"
 fusion_ins="docker run -v ${wd}:/data --rm \
        ${DOCKER_IMAGE_ID} \
@@ -144,7 +165,7 @@ mark-section "Running FusionInspector"
 eval "${fusion_ins}"
 
 
-mark-section "move results files to their output directories"
+mark-section "Move results files to their output directories"
 
 find /home/dnanexus/temp_out -type f -name "*.FusionInspector.fusions.abridged.tsv" -printf "%f\n" | \
 xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_abridged/{}
@@ -170,6 +191,6 @@ if [ "$include_trinity" = "true" ]; then
        -printf "%f\n" | xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_trinity_bed/{}
 fi
 
-mark-section "upload the outputs"
+mark-section "Upload the final outputs"
 dx-upload-all-outputs --parallel
 mark-success
