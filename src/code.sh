@@ -136,7 +136,7 @@ fusion_ins="docker run -v ${wd}:/data --rm \
        FusionInspector  \
        --fusions ${known_fusions},/data/in/sr_predictions/predicted_fusions.txt \
        -O /data/temp_out \
-       -CPU ${NUMBER_THREADS} \
+       --CPU ${NUMBER_THREADS} \
        --left_fq ${read_1} \
        --right_fq ${read_2} \
        --out_prefix ${prefix} \
