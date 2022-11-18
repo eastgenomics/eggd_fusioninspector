@@ -29,7 +29,9 @@ https://github.com/FusionInspector/FusionInspector/wiki
     * The argument '--include_trinity' will be run in the command if the user selected it.
     * Optional parameter '--vis' is run, to produce a HTML report of fusion results.
     * Optional parameter '--examine_coding_effect' is run, to produce a tsv file with details of possible coding region impacts of each fusion.
-    * If the user passed any text to the input option 'opt_params' these will be appended to the command.
+    * Optional parameter '--extract_fusion_reads_file' is run #TODO: get the outputs from this
+    * Optional parameter '--CPU' is set inside the app, according to the number of threads available in the instance.
+    * If the user passed any text to the input option 'opt_parameters' these will be appended to the command.
     * Production versions of this app will need to point to a controlled Docker image in 'references' on DNAnexus to ensure that the same version is run each time.
 * Prefixes output file names with the sample name.
 * Uploads the output files to DNA Nexus.
@@ -80,6 +82,12 @@ Further options available to change in FusionInspector, and obtained by running 
 * --no_annot_filter
 * --max_sensitivity
 * --extreme_sensitivity
+
+The following options are already set in the app:
+* --vis 
+* --examine_coding_effect 
+* --extract_fusion_reads_file
+* --CPU
 
 The below option is unlikely to be needed with our workflow:
 * --samples_file SAMPLES_FILE
