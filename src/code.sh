@@ -110,8 +110,8 @@ __trim_lanes_compare_prefix () {
        done
 }
 
-_trim_lanes_compare_prefix "$prefix" ${R1[@]}
-_trim_lanes_compare_prefix "$prefix" ${R2[@]}
+r1_result=$(_trim_lanes_compare_prefix "$prefix" ${R1[@]})
+r2_result=$(_trim_lanes_compare_prefix "$prefix" ${R2[@]})
 
 
 # make temporary and final output dirs
