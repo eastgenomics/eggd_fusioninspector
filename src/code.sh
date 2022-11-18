@@ -95,7 +95,7 @@ done
 
 # Test that the start of the read files (without lanes), begin with the expected 'prefix' taken from the 
 #STAR-Fusion predictions
-__trim_lanes_compare_prefix () {
+_trim_lanes_compare_prefix () {
        # Identify and cut off the lane suffixes. Compare rest of name to StarFusion file prefix. Exit if mismatch.
        # Expects lanes to be in the format '_L00(digit)__(digit)(digit)(digit)'
        # Post-lane digits are left over from when read was cut out.
@@ -110,8 +110,8 @@ __trim_lanes_compare_prefix () {
        done
 }
 
-r1_result=$(_trim_lanes_compare_prefix "$prefix" ${R1[@]})
-r2_result=$(_trim_lanes_compare_prefix "$prefix" ${R2[@]})
+_trim_lanes_compare_prefix "$prefix" ${R1[@]}
+_trim_lanes_compare_prefix "$prefix" ${R2[@]}
 
 
 # make temporary and final output dirs
