@@ -152,9 +152,9 @@ if [ "$include_trinity" = "true" ]; then
        fusion_ins="${fusion_ins} --include_Trinity"
 fi
 
-if [ -n "$parameters" ]; then
+if [ -n "$opt_parameters" ]; then
        mark-section "Adding additional user-entered parameters to FusionInspector command"
-       fusion_ins="${fusion_ins} ${parameters}"
+       fusion_ins="${fusion_ins} ${opt_parameters}"
 fi
 
 mark-section "Running FusionInspector"

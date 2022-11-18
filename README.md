@@ -18,7 +18,7 @@ https://github.com/FusionInspector/FusionInspector/wiki
 * The file ID of a STAR genome resource, which should be a compressed '.tar.gz' file - from https://data.broadinstitute.org/Trinity/CTAT_RESOURCE_LIB/
     * This must have the string "CTAT_lib" in its directory name, in order to be accessed by the script.
 * A string value for 'include_trinity', either 'true' if Trinity should be run, or 'false' if it should be skipped.
-* The user may pass additional parameters using 'opt_params', which should be a space-delimited string. If additional parameters aren't passed, FusionInspector defaults will run. Options available are detailed at the bottom of the page under 'Appendix 1'.
+* The user may pass additional parameters using 'opt_parameters', which should be a space-delimited string. If additional parameters aren't passed, FusionInspector defaults will run. Options available are detailed at the bottom of the page under 'Appendix 1'.
 
 ## How does this app work?
 * Downloads all inputs and unzips/untars the STAR genome resource.
