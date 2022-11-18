@@ -101,12 +101,13 @@ done
 # Test that the start of the read files (without lanes), begin with the expected 'prefix' taken from the 
 #STAR-Fusion predictions
 __trim_lanes_compare_prefix () {
-       # Identify and cut off lane suffixes. Compare rest of name to StarFusion file prefix. Exit if mismatch.
-       # Expects lanes to always be at the very end of the string after reads removed, and in the format '_L00(digit)'
+       # Identify and cut off the lane suffixes. Compare rest of name to StarFusion file prefix. Exit if mismatch.
+       # Expects lanes to be in the format '_L00(digit)__(digit)(digit)(digit)'
+       # Post-lane digits are left over from when read was cut out.
        local fastq_array=("$@")
        local prefix=$1
        for i in "${fastq_array[@]}"; do
-              lane_cut_off=$(echo $i | sed -r 's/_L00[1-9]$//g')
+              lane_cut_off=$(echo $i | sed -r 's/_L00[1-9]__[0-9]{3}$//g')
               if [[ ! "$lane_cut_off" == "$prefix" ]]; then 
                      echo "Start of filename does not match expected prefix taken from STAR-Fusion file: $i - exiting"  
                      exit 1
