@@ -132,7 +132,7 @@ mark-section "Set up basic FusionInspector command prior to running"
 wd="$(pwd)"
 fusion_ins="docker run -v ${wd}:/data --rm \
        ${DOCKER_IMAGE_ID} \
-       FusionInspector validate \
+       FusionInspector \
        --fusions ${known_fusions},/data/in/sr_predictions/predicted_fusions.txt \
        -O /data/temp_out \
        --CPU ${NUMBER_THREADS} \
