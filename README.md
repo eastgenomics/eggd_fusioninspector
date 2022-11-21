@@ -92,7 +92,4 @@ The following options are already set in the app:
 The below option is unlikely to be needed with our workflow:
 * --samples_file SAMPLES_FILE
 
-## Notes
-* This app is not ready for production use
-
 ## This app was made by East GLH
