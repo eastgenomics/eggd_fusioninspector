@@ -1,7 +1,7 @@
 # FusionInspector v1.0.0
 
 ## What does this app do?
-Runs FusionInspector v2.8.0, a tool which in silico validates fusion predictions by recovering and re-scoring fusion evidence. This app is set up to process the '.fusion_predictions.tsv' file produced by the earlier STAR-Fusion alignment step. It produces a summary file 'inspector.FusionInspector.fusions.abridged.tsv' and a 'final' file with more detailed information.
+Runs FusionInspector, a tool which in silico validates fusion predictions by recovering and re-scoring fusion evidence, from its official Docker image. This app is set up to process the '.fusion_predictions.tsv' file produced by the earlier STAR-Fusion alignment step. It produces a summary file 'inspector.FusionInspector.fusions.abridged.tsv' and a 'final' file with more detailed information.
 
 FusionInspector's GitHub repository and wiki are available at the following URLs:
 https://github.com/FusionInspector/FusionInspector
