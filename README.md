@@ -9,8 +9,8 @@ https://github.com/FusionInspector/FusionInspector/wiki
 
 ## What inputs are required for this app to run?
 * The DNA Nexus file ID of a saved FusionInspector Docker image, which should be a compressed '.tar.gz'
-* The file IDs for the Read 1 FASTQ file(s), provided as an array.
-* The file IDs for the Read 2 FASTQ file(s), provided as an array.
+* The file IDs for the Read 1 FASTQ file(s), provided as an array. Files must be compressed and end '.fastq.gz' or 'fq.gz'.
+* The file IDs for the Read 2 FASTQ file(s), provided as an array. Files must be compressed and end '.fastq.gz' or 'fq.gz'.
 * The file IDs for 'known fusions' file(s), provided as an array. Files are expected to end '*.txt'. The known fusion files contain regions which should always have fusion evidence checked by FusionInspector, regardless of whether or not they appear in the STAR-Fusion predictions file. They may include commonly-implicated fusion loci for the condition under investigation. 
     * Fusions must be written in the format geneA--geneB.
     * Known fusions may contain multiple tab-separated columns, but only the first column will be used by the app.

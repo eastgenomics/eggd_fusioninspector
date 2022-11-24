@@ -1,7 +1,7 @@
 {
   "name": "eggd_fusioninspector",
   "title": "eggd_fusioninspector",
-  "summary": "App which runs FusionInspector v2.8.0 in the official Docker. It identifies fusions using known 'rescue list' fusion pairs, plus predictions from STAR-Fusion",
+  "summary": "App which runs FusionInspector from its official Docker image. It identifies fusions using known 'rescue list' fusion pairs, plus predictions from STAR-Fusion",
   "properties": {
     "github release": "pending"
   },
@@ -21,7 +21,8 @@
       "class": "array:file",
       "optional": false,
       "patterns": [
-        "*.fastq.gz"
+        "*.fastq.gz",
+        "*.fq.gz"
       ],
       "help": "R1 FASTQ file(s) for a single sample"
     },
@@ -31,7 +32,8 @@
       "class": "array:file",
       "optional": false,
       "patterns": [
-        "*.fastq.gz"
+        "*.fastq.gz",
+        "*.fq.gz"
       ],
       "help": "R2 FASTQ file(s) for a single sample"
     },

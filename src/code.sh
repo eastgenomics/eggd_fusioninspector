@@ -20,9 +20,9 @@ find ./in/r2_fastqs -type f -name "*R2*" -print0 | xargs -0 -I {} mv {} ./r2_fas
 find ./in/known_fusions -type f -name "*.txt*" -print0 | xargs -0 -I {} mv {} ./known_fusions
 
 # form array:file uploads in a comma-separated list - prepend '/data/' path, for use in Docker
-read_1=$(find ./r1_fastqs/ -type f -name "*" -name "*R1*.fastq*" | \
+read_1=$(find ./r1_fastqs/ -type f -name "*" -name "*R1*.f*" | \
 sed 's/\.\///g' | sed -e 's/^/\/data\//' | paste -sd, -)
-read_2=$(find ./r2_fastqs/ -type f -name "*" -name "*R2*.fastq*" | \
+read_2=$(find ./r2_fastqs/ -type f -name "*" -name "*R2*.f*" | \
 sed 's/\.\///g' | sed -e 's/^/\/data\//' | paste -sd, -)
 known_fusions=$(find ./known_fusions/ -type f -name "*" | \
 sed 's/\.\///g' | sed -e 's/^/\/data\//' | paste -sd, -)
