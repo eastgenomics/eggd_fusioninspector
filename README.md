@@ -43,7 +43,8 @@ https://github.com/FusionInspector/FusionInspector/wiki
     * fi_abridged: an abridged version of the FusionInspector output, as a tsv file.
     * fi_coding: the abridged FusionInspector output containing additional information about potential coding effect, a tsv file 
     * fi_html: a HTML of fusion evidence which can be viewed in-browser.
-    * fi_fusion_reads: reads which FusionInspector mapped to the fusions.
+    * fi_fusion_r1: read 1s which FusionInspector mapped to the fusions.
+    * fi_fusion_r2: read 2s which FusionInspector mapped to the fusions.
 * The following outputs are only produced if 'include_trinity' is set to 'true' at run time:
     * fi_trinity_fasta: a FASTA file of de novo assembled transcript sequences.
     * fi_trinity_gff: a GFF3 file of reconstructed fusion transcript alignments.

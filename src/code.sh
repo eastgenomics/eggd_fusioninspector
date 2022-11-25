@@ -120,7 +120,8 @@ mkdir -p "/home/dnanexus/out/fi_abridged"
 mkdir "/home/dnanexus/out/fi_full"
 mkdir "/home/dnanexus/out/fi_coding"
 mkdir "/home/dnanexus/out/fi_html"
-mkdir "/home/dnanexus/out/fi_fusion_reads"
+mkdir "/home/dnanexus/out/fi_fusion_r1"
+mkdir "/home/dnanexus/out/fi_fusion_r2"
 if [ "$include_trinity" = "true" ]; then
        mkdir "/home/dnanexus/out/fi_trinity_fasta"
        mkdir "/home/dnanexus/out/fi_trinity_gff"
@@ -175,8 +176,11 @@ xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_coding/{}
 find /home/dnanexus/temp_out -type f -name "*.fusion_inspector_web.html" -printf "%f\n" | \
 xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_html/{}
 
-find /home/dnanexus -type f -name "${prefix}.fusion_reads.fusion_evidence_reads_*" -printf "%f\n" | \
-xargs -I{} mv /home/dnanexus/{} /home/dnanexus/out/fi_fusion_reads/{}
+find /home/dnanexus -type f -name "${prefix}.fusion_reads.fusion_evidence_reads_*1*" -printf "%f\n" | \
+xargs -I{} mv /home/dnanexus/{} /home/dnanexus/out/fi_fusion_r1/{}
+
+find /home/dnanexus -type f -name "${prefix}.fusion_reads.fusion_evidence_reads_*2*" -printf "%f\n" | \
+xargs -I{} mv /home/dnanexus/{} /home/dnanexus/out/fi_fusion_r2/{}
 
 if [ "$include_trinity" = "true" ]; then
        find /home/dnanexus/temp_out -type f -name "*.gmap_trinity_GG.fusions.fasta" -printf "%f\n" | \

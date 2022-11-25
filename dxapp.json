@@ -112,11 +112,18 @@
       "help": "A HTML report of FusionInspector-validated fusions"
     },
     {
-      "name": "fi_fusion_reads",
-      "label": "fi_fusion_reads",
+      "name": "fi_fusion_r1",
+      "label": "fi_fusion_reads_1",
       "class": "file",
       "optional": false,
-      "help": "A file of reads which mapped to fusions"
+      "help": "A file of R1 reads which mapped to fusions"
+    },
+    {
+      "name": "fi_fusion_r2",
+      "label": "fi_fusion_reads_2",
+      "class": "file",
+      "optional": false,
+      "help": "A file of R2 reads which mapped to fusions"
     },
     {
       "name": "fi_trinity_fasta",
