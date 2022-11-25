@@ -29,7 +29,7 @@ https://github.com/FusionInspector/FusionInspector/wiki
     * The argument '--include_trinity' will be run in the command if the user selected it.
     * Optional parameter '--vis' is run, to produce a HTML report of fusion results.
     * Optional parameter '--examine_coding_effect' is run, to produce a tsv file with details of possible coding region impacts of each fusion.
-    * Optional parameter '--extract_fusion_reads_file' is run #TODO: get the outputs from this
+    * Optional parameter '--extract_fusion_reads_file' is run, outputting files of fusion-mapping reads.
     * Optional parameter '--CPU' is set inside the app, according to the number of threads available in the instance.
     * If the user passed any text to the input option 'opt_parameters' these will be appended to the command.
     * Production versions of this app will need to point to a controlled Docker image in 'references' on DNAnexus to ensure that the same version is run each time.
@@ -43,6 +43,7 @@ https://github.com/FusionInspector/FusionInspector/wiki
     * fi_abridged: an abridged version of the FusionInspector output, as a tsv file.
     * fi_coding: the abridged FusionInspector output containing additional information about potential coding effect, a tsv file 
     * fi_html: a HTML of fusion evidence which can be viewed in-browser.
+    * fi_fusion_reads: reads which FusionInspector mapped to the fusions.
 * The following outputs are only produced if 'include_trinity' is set to 'true' at run time:
     * fi_trinity_fasta: a FASTA file of de novo assembled transcript sequences.
     * fi_trinity_gff: a GFF3 file of reconstructed fusion transcript alignments.

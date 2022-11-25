@@ -120,6 +120,7 @@ mkdir -p "/home/dnanexus/out/fi_abridged"
 mkdir "/home/dnanexus/out/fi_full"
 mkdir "/home/dnanexus/out/fi_coding"
 mkdir "/home/dnanexus/out/fi_html"
+mkdir "/home/dnanexus/out/fi_fusion_reads"
 if [ "$include_trinity" = "true" ]; then
        mkdir "/home/dnanexus/out/fi_trinity_fasta"
        mkdir "/home/dnanexus/out/fi_trinity_gff"
@@ -174,6 +175,8 @@ xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_coding/{}
 find /home/dnanexus/temp_out -type f -name "*.fusion_inspector_web.html" -printf "%f\n" | \
 xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_html/{}
 
+find /home/dnanexus/temp_out -type f -name "${prefix}.fusion_reads" -printf "%f\n" | \
+xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_fusion_reads/{}
 
 if [ "$include_trinity" = "true" ]; then
        find /home/dnanexus/temp_out -type f -name "*.gmap_trinity_GG.fusions.fasta" -printf "%f\n" | \
