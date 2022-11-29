@@ -180,7 +180,7 @@ find /home/dnanexus/temp_out -type f -name "${prefix}.fusion_evidence_reads_*1*"
 xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_fusion_r1/"${prefix}".{}
 
 find /home/dnanexus/temp_out -type f -name "${prefix}.fusion_evidence_reads_*2*" -printf "%f\n" | \
-xargs -I{} mv /home/dnanexus/temp_out{} /home/dnanexus/out/fi_fusion_r2/"${prefix}".{}
+xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_fusion_r2/"${prefix}".{}
 
 if [ "$include_trinity" = "true" ]; then
        find /home/dnanexus/temp_out -type f -name "*.gmap_trinity_GG.fusions.fasta" -printf "%f\n" | \
