@@ -144,7 +144,7 @@ fusion_ins="docker run -v ${wd}:/data --rm \
        --genome_lib_dir /data/${lib_dir}/ctat_genome_lib_build_dir \
        --vis \
        --examine_coding_effect \
-       --extract_fusion_reads_file /data/temp_out"
+       --extract_fusion_reads_file /data/temp_out/${prefix}"
 
 
 # run FusionInspector, adding an arg to run Trinity if requested by user, and adding optional user-entered parameters if any 
@@ -176,10 +176,10 @@ xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_coding/{}
 find /home/dnanexus/temp_out -type f -name "*.fusion_inspector_web.html" -printf "%f\n" | \
 xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_html/{}
 
-find /home/dnanexus/temp_out -type f -name "${prefix}.fusion_reads.fusion_evidence_reads_*1*" -printf "%f\n" | \
+find /home/dnanexus/temp_out -type f -name "${prefix}.fusion_evidence_reads_*1*" -printf "%f\n" | \
 xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_fusion_r1/"${prefix}".{}
 
-find /home/dnanexus/temp_out -type f -name "${prefix}.fusion_reads.fusion_evidence_reads_*2*" -printf "%f\n" | \
+find /home/dnanexus/temp_out -type f -name "${prefix}.fusion_evidence_reads_*2*" -printf "%f\n" | \
 xargs -I{} mv /home/dnanexus/temp_out{} /home/dnanexus/out/fi_fusion_r2/"${prefix}".{}
 
 if [ "$include_trinity" = "true" ]; then
