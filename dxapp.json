@@ -1,0 +1,180 @@
+{
+  "name": "eggd_fusioninspector",
+  "title": "eggd_fusioninspector",
+  "summary": "App which runs FusionInspector from its official Docker image. It identifies fusions using known 'rescue list' fusion pairs, plus predictions from STAR-Fusion",
+  "properties": {
+    "github release": "pending"
+  },
+  "dxapi": "1.0.0",
+  "version": "1.0.0",
+  "inputSpec": [
+    {
+      "name": "fi_docker",
+      "label": "fi_docker",
+      "class": "file",
+      "optional": false,
+      "help": "File ID of FusionInspector Docker image in DNA Nexus"
+    },
+    {
+      "name": "r1_fastqs",
+      "label": "Read 1 fastq files",
+      "class": "array:file",
+      "optional": false,
+      "patterns": [
+        "*.fastq.gz",
+        "*.fq.gz"
+      ],
+      "help": "R1 FASTQ file(s) for a single sample"
+    },
+    {
+      "name": "r2_fastqs",
+      "label": "Read 2 fastq files",
+      "class": "array:file",
+      "optional": false,
+      "patterns": [
+        "*.fastq.gz",
+        "*.fq.gz"
+      ],
+      "help": "R2 FASTQ file(s) for a single sample"
+    },
+    {
+      "name": "known_fusions",
+      "label": "known_fusions",
+      "class": "array:file",
+      "optional": false,
+      "patterns": [
+        "*.txt"
+      ],
+      "help": "Any number of .txt files of known fusions which should be searched for. First column must be in format 'geneA--geneB'. Additional columns should be tab-delimited and are not used by the app."
+    },
+    {
+      "name": "sr_predictions",
+      "label": "star fusion predictions",
+      "class": "file",
+      "optional": false,
+      "patterns": [
+        "*fusion_predictions.tsv"
+      ],
+      "help": "predictions.tsv file output from STAR-Fusion"
+    },
+    {
+      "name": "genome_lib",
+      "label": "genome_lib",
+      "class": "file",
+      "optional": false,
+      "patterns": [
+        "*.gz"
+      ],
+      "help": "A CTAT genome library, which is a reference file bundle required by Trinity CTAT tools"
+    },
+    {
+      "name": "include_trinity",
+      "label": "include_trinity",
+      "class": "boolean",
+      "optional": false,
+      "help": "Set to 'true' to run Trinity de novo reconstruction of fusion transcripts from reads, or 'false' to skip this analysis"
+    },
+    {
+      "name": "opt_parameters",
+      "label": "Optional additional parameters to be used by FusionInspector",
+      "help": "The optional additional parameters and flags for FusionInspector. Should be space-delimated, and in the format --parameter-name value e.g. --alignIntronMax 100000 --alignSJstitchMismatchNmax 5 -1 5 5",
+      "class": "string",
+      "optional": true
+    }
+  ],
+  "outputSpec": [
+    {
+      "name": "fi_full",
+      "label": "fi_full",
+      "class": "file",
+      "optional": false,
+      "help": "FusionInspector full output file"
+    },
+    {
+      "name": "fi_abridged",
+      "label": "fi_abridged",
+      "class": "file",
+      "optional": false,
+      "help": "FusionInspector abridged output file"
+    },
+    {
+      "name": "fi_coding",
+      "label": "fi_coding",
+      "class": "file",
+      "optional": false,
+      "help": "FusionInspector file of predicted coding effects"
+    },
+    {
+      "name": "fi_html",
+      "label": "fi_html",
+      "class": "file",
+      "optional": false,
+      "help": "A HTML report of FusionInspector-validated fusions"
+    },
+    {
+      "name": "fi_fusion_r1",
+      "label": "fi_fusion_reads_1",
+      "class": "file",
+      "optional": false,
+      "help": "A gzipped, FASTQ file containing R1 reads which mapped to fusions"
+    },
+    {
+      "name": "fi_fusion_r2",
+      "label": "fi_fusion_reads_2",
+      "class": "file",
+      "optional": false,
+      "help": "A gzipped, FASTQ file containing R2 reads which mapped to fusions"
+    },
+    {
+      "name": "fi_trinity_fasta",
+      "label": "fi_trinity_fasta",
+      "class": "file",
+      "optional": true,
+      "help": "FASTA file of de novo assembled transcript sequences - generated if Trinity option is run"
+    },
+    {
+      "name": "fi_trinity_gff",
+      "label": "fi_trinity_gff",
+      "class": "file",
+      "optional": true,
+      "help": "GFF3 file of reconstructed fusion transcript alignments - generated if Trinity option is run"
+    },
+    {
+      "name": "fi_trinity_bed",
+      "label": "fi_trinity_bed",
+      "class": "file",
+      "optional": true,
+      "help": "BED file of reconstructed fusion transcript alignments - generated if Trinity option is run"
+    }
+  ],
+  "runSpec": {
+    "timeoutPolicy": {
+      "*": {
+        "hours": 24
+      }
+    },
+    "interpreter": "bash",
+    "file": "src/code.sh",
+    "release": "20.04",
+    "distribution": "Ubuntu",
+    "version": "0"
+  },
+  "developers":[
+    "org-emee_1"
+  ],
+  "authorizedUsers": [
+    "org-emee_1"
+  ],
+  "access": {
+    "project": "CONTRIBUTE"
+  },
+  "regionalOptions": {
+    "aws:eu-central-1": {
+      "systemRequirements": {
+        "*": {
+          "instanceType": "mem2_ssd1_v2_x32"
+        }
+      }
+    }
+  }
+}
