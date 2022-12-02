@@ -176,11 +176,18 @@ xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_coding/{}
 find /home/dnanexus/temp_out -type f -name "*.fusion_inspector_web.html" -printf "%f\n" | \
 xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_html/{}
 
-find /home/dnanexus/temp_out -type f -name "${prefix}.fusion_evidence_reads_*1*" -printf "%f\n" | \
-xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_fusion_r1/"${prefix}".{}
+# change fusion_evidence_reads .fq endings to .fastq in place, and zip
+find /home/dnanexus/temp_out -type f -name "${prefix}.fusion_evidence_reads_*" \
+| grep \.fq$ | sed 'p;s/\.fq/\.fastq/' | xargs -n2 mv
 
-find /home/dnanexus/temp_out -type f -name "${prefix}.fusion_evidence_reads_*2*" -printf "%f\n" | \
-xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_fusion_r2/"${prefix}".{}
+find /home/dnanexus/temp_out -type f -name "${prefix}.fusion_evidence_reads_*.fastq" -exec gzip {} \;
+
+# move fusion_evidence_reads
+find /home/dnanexus/temp_out -type f -name "${prefix}.fusion_evidence_reads_*1*.fastq.gz" -printf "%f\n" | \
+xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_fusion_r1/{}
+
+find /home/dnanexus/temp_out -type f -name "${prefix}.fusion_evidence_reads_*2*.fastq.gz" -printf "%f\n" | \
+xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_fusion_r2/{}
 
 if [ "$include_trinity" = "true" ]; then
        find /home/dnanexus/temp_out -type f -name "*.gmap_trinity_GG.fusions.fasta" -printf "%f\n" | \
