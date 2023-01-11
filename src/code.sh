@@ -29,17 +29,9 @@ sed 's/\.\///g' | sed -e 's/^/\/data\//' | paste -sd, -)
 known_fusions=$(find ./known_fusions/ -type f -name "*" | \
 sed 's/\.\///g' | sed -e 's/^/\/data\//' | paste -sd, -)
 
-# slightly reformat the STAR-Fusion predicted fusions for Docker
+# remove header line from STAR-Fusion predicted fusions for Docker
 sr_predictions_name=$(find /home/dnanexus/sr_predictions -type f -printf "%f\n")
-cut_out=$(cut -f 1 /home/dnanexus/sr_predictions/"${sr_predictions_name}")
-if grep -v '#FusionName' "$cut_out"
-then 
-       grep -v '#FusionName' "$cut_out" > /home/dnanexus/sr_predictions/predicted_fusions.txt
-       fusions_arg="${known_fusions},/data/sr_predictions/predicted_fusions.txt"
-else
-       fusions_arg="${known_fusions}"
-fi
-
+cut -f 1 /home/dnanexus/sr_predictions/"${sr_predictions_name}" > /home/dnanexus/sr_predictions/predicted_fusions.txt
 
 # Get FusionInspector Docker image by its ID
 docker load -i /home/dnanexus/in/fi_docker/*.tar.gz
@@ -144,7 +136,7 @@ wd="$(pwd)"
 fusion_ins="docker run -v ${wd}:/data --rm \
        ${DOCKER_IMAGE_ID} \
        FusionInspector \
-       --fusions ${fusions_arg} \
+       --fusions "${known_fusions},/data/sr_predictions/predicted_fusions.txt" \
        -O /data/temp_out \
        --CPU ${NUMBER_THREADS} \
        --left_fq ${read_1} \
