@@ -14,10 +14,12 @@ lib_dir=$(find . -type d -name "*CTAT_lib*")
 mkdir /home/dnanexus/r1_fastqs
 mkdir /home/dnanexus/r2_fastqs
 mkdir /home/dnanexus/known_fusions
+mkdir /home/dnanexus/sr_predictions
 
 find ./in/r1_fastqs -type f -name "*R1*" -print0 | xargs -0 -I {} mv {} ./r1_fastqs
 find ./in/r2_fastqs -type f -name "*R2*" -print0 | xargs -0 -I {} mv {} ./r2_fastqs
 find ./in/known_fusions -type f -name "*.txt*" -print0 | xargs -0 -I {} mv {} ./known_fusions
+find ./in/sr_predictions -type f -print0 | xargs -0 -I {} mv {} ./sr_predictions
 
 # form array:file uploads in a comma-separated list - prepend '/data/' path, for use in Docker
 read_1=$(find ./r1_fastqs/ -type f -name "*" -name "*R1*.f*" | \
@@ -27,10 +29,8 @@ sed 's/\.\///g' | sed -e 's/^/\/data\//' | paste -sd, -)
 known_fusions=$(find ./known_fusions/ -type f -name "*" | \
 sed 's/\.\///g' | sed -e 's/^/\/data\//' | paste -sd, -)
 
-# slightly reformat the STAR-Fusion predicted fusions for Docker
-sr_predictions_name=$(find /home/dnanexus/in/sr_predictions -type f -printf "%f\n")
-cut -f 1 /home/dnanexus/in/sr_predictions/"${sr_predictions_name}" \
-| grep -v '#FusionName' > /home/dnanexus/in/sr_predictions/predicted_fusions.txt
+# remove header line from STAR-Fusion predicted fusions for Docker
+sr_predictions_name=$(find /home/dnanexus/sr_predictions -type f -printf "%f\n")
 
 # Get FusionInspector Docker image by its ID
 docker load -i /home/dnanexus/in/fi_docker/*.tar.gz
@@ -135,7 +135,7 @@ wd="$(pwd)"
 fusion_ins="docker run -v ${wd}:/data --rm \
        ${DOCKER_IMAGE_ID} \
        FusionInspector \
-       --fusions ${known_fusions},/data/in/sr_predictions/predicted_fusions.txt \
+       --fusions "${known_fusions},/data/sr_predictions/${sr_predictions_name}" \
        -O /data/temp_out \
        --CPU ${NUMBER_THREADS} \
        --left_fq ${read_1} \
