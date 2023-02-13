@@ -31,6 +31,8 @@ sed 's/\.\///g' | sed -e 's/^/\/data\//' | paste -sd, -)
 
 # remove header line from STAR-Fusion predicted fusions for Docker
 sr_predictions_name=$(find /home/dnanexus/sr_predictions -type f -printf "%f\n")
+cut -f 1 /home/dnanexus/sr_predictions/"${sr_predictions_name}" \
+| grep -v '#FusionName' > /home/dnanexus/sr_predictions/predicted_fusions.txt
 
 # Get FusionInspector Docker image by its ID
 docker load -i /home/dnanexus/in/fi_docker/*.tar.gz
@@ -135,7 +137,7 @@ wd="$(pwd)"
 fusion_ins="docker run -v ${wd}:/data --rm \
        ${DOCKER_IMAGE_ID} \
        FusionInspector \
-       --fusions "${known_fusions},/data/sr_predictions/${sr_predictions_name}" \
+       --fusions "${known_fusions},/data/sr_predictions/predicted_fusions.txt \
        -O /data/temp_out \
        --CPU ${NUMBER_THREADS} \
        --left_fq ${read_1} \
