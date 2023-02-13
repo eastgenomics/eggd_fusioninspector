@@ -137,7 +137,7 @@ wd="$(pwd)"
 fusion_ins="docker run -v ${wd}:/data --rm \
        ${DOCKER_IMAGE_ID} \
        FusionInspector \
-       --fusions "${known_fusions},/data/sr_predictions/predicted_fusions.txt \
+       --fusions "${known_fusions},/data/sr_predictions/predicted_fusions.txt" \
        -O /data/temp_out \
        --CPU ${NUMBER_THREADS} \
        --left_fq ${read_1} \
