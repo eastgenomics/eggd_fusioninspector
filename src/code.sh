@@ -154,6 +154,16 @@ if [ "$include_trinity" = "true" ]; then
 fi
 
 if [ -n "$opt_parameters" ]; then
+       # Test that there are no banned parameters in --parameters input string
+       banned_parameters=(--fusions -O --CPU --left_fq --right_fq --out_prefix --genome_lib_dir --vis \
+       --examine_coding_effect --extract_fusion_reads_file --include_Trinity)
+       for parameter in ${banned_parameters[@]}; do
+              if [[ "$opt_parameters" == *"$parameter"* ]]; then
+                     echo "The parameter ${parameter} was set as an input. This parameter is set within \
+                     the app and cannot be set as an input. Please repeat without this parameter"
+                     exit 1
+              fi
+       done
        mark-section "Adding additional user-entered parameters to FusionInspector command"
        fusion_ins="${fusion_ins} ${opt_parameters}"
 fi
