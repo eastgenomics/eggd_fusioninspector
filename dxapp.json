@@ -10,7 +10,7 @@
       "label": "fi_docker",
       "class": "file",
       "optional": false,
-      "help": "File ID of FusionInspector Docker image in DNA Nexus"
+      "help": "File ID of FusionInspector Docker image in DNAnexus"
     },
     {
       "name": "r1_fastqs",
@@ -147,7 +147,7 @@
   "runSpec": {
     "timeoutPolicy": {
       "*": {
-        "hours": 24
+        "hours": 12
       }
     },
     "interpreter": "bash",
