@@ -29,10 +29,12 @@ def get_args():
 
 def filter_on_frame(df):
     """
-    Filter the dataframe to remove unwanted frame states
+    Filter the dataframe to remove all rows except 'INFRAME' ones
     :param df:
     :returns a filtered df:
     """
+    filtered_df = df.loc[df["PROT_FUSION_TYPE"] == "INFRAME"]
+    return filtered_df
 
 
 def main():
