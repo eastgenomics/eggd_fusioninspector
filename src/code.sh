@@ -174,10 +174,12 @@ eval "${fusion_ins}"
 mark-section "Creating a new, filtered file based on 'FusionInspector.fusions.abridged.tsv.coding_effect', \
  by removing rows where the PROT_FUSION_TYPE annotation column indicates it is out-of-frame"
 
+filtered_filename="${prefix}.FusionInspector.fusions.abridged.tsv.coding_effect.filtered"
+
 abridged_coding_effect=$(find /home/dnanexus/temp_out -type f -name "*.FusionInspector.fusions.abridged.tsv.coding_effect")
 /usr/bin/time -v python3 filter_on_frame.py \
 --input_file "$abridged_coding_effect" \
---output_prefix "$prefix"
+--outname "$filtered_filename"
 
 
 mark-section "Move results files to their output directories"
@@ -190,6 +192,9 @@ xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_full/{}
 
 find /home/dnanexus/temp_out -type f -name "*.FusionInspector.fusions.abridged.tsv.coding_effect" -printf "%f\n" | \
 xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_coding/{} 
+
+find /home/dnanexus/temp_out -type f -name "$filtered_filename" -printf "%f\n" | \
+xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_frame_filtered/{} 
 
 find /home/dnanexus/temp_out -type f -name "*.fusion_inspector_web.html" -printf "%f\n" | \
 xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_html/{}

@@ -15,9 +15,9 @@ def get_args():
             )
         ),
     parser.add_argument(
-        '-o', '--output_prefix', required=True,
+        '-o', '--outname', required=True,
         help=(
-            'Output name prefix for the filtered file.'
+            'Output name for the filtered file.'
             )
     ),
     parser.add_argument(
@@ -41,8 +41,7 @@ def main():
     args = get_args()
     input_file = pd.read_csv(args.input_file, sep="\t")
     output_df = filter_on_frame(input_file)
-    outname = args.out_dir + "/" + args.output_prefix + ".FusionInspector.fusions.abridged.tsv.coding_effect.filtered"
-    output_df.to_csv(outname, sep="\t", index=False)
+    output_df.to_csv(args.outname, sep="\t", index=False)
 
 
 if __name__ == "__main__":

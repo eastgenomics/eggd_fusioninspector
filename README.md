@@ -41,7 +41,8 @@ https://github.com/FusionInspector/FusionInspector/wiki
 * The following outputs are produced both with and without Trinity being run:
     * fi_full: a full set of outputs from FusionInspector, as a tsv file.
     * fi_abridged: an abridged version of the FusionInspector output, as a tsv file.
-    * fi_coding: the abridged FusionInspector output containing additional information about potential coding effect, a tsv file 
+    * fi_coding: the abridged FusionInspector output containing additional information about potential coding effect, a tsv file.
+    * fi_frame_filtered: fi_coding but with all non-INFRAME fusions filtered out. 
     * fi_html: a HTML of fusion evidence which can be viewed in-browser.
     * fi_fusion_r1: read 1s which FusionInspector mapped to the fusions, as a gzipped FASTQ file.
     * fi_fusion_r2: read 2s which FusionInspector mapped to the fusions, as a gzipped FASTQ file.

@@ -102,6 +102,13 @@
       "help": "FusionInspector file of predicted coding effects"
     },
     {
+      "name": "fi_frame_filtered",
+      "label": "fi_frame_filtered",
+      "class": "file",
+      "optional": false,
+      "help": "FusionInspector file of predicted coding effects, with frame-based filtering applied"
+    },
+    {
       "name": "fi_html",
       "label": "fi_html",
       "class": "file",
