@@ -1,5 +1,6 @@
 import argparse
 import os
+import pandas as pd
 
 
 def get_args():
@@ -26,8 +27,20 @@ def get_args():
     return parser.parse_args()
 
 
+def filter_on_frame(df):
+    """
+    Filter the dataframe to remove unwanted frame states
+    :param df:
+    :returns a filtered df:
+    """
+
+
 def main():
     args = get_args()
+    input_file = pd.read_csv(args.input_file, sep="\t")
+    output_df = filter_on_frame(input_file)
+    outname = args.out_dir + "/" + args.output_prefix + ".FusionInspector.fusions.abridged.tsv.coding_effect.filtered"
+    output_df.to_csv(outname, sep="\t", index=False)
 
 
 if __name__ == "__main__":
