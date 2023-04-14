@@ -3,6 +3,10 @@
 # fail on any error
 set -exo pipefail
 
+mark-section "Installing Python packages"
+export PATH=$PATH:/home/dnanexus/.local/bin  # pip installs some packages here, add to path
+sudo -H python3 -m pip install --no-index --no-deps packages/*
+
 # download all inputs, untar plug-n-play resources, and get its path
 mark-section "Download inputs and set up initial directories and values"
 dx-download-all-inputs
