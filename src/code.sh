@@ -160,7 +160,7 @@ fi
 if [ -n "$opt_parameters" ]; then
        # Test that there are no banned parameters in --parameters input string
        banned_parameters=(--fusions -O --CPU --left_fq --right_fq --out_prefix --genome_lib_dir --vis \
-       --examine_coding_effect --extract_fusion_reads_file --include_Trinity)
+       --examine_coding_effect --extract_fusion_reads_file --include_Trinity --samples_file)
        for parameter in ${banned_parameters[@]}; do
               if [[ "$opt_parameters" == *"$parameter"* ]]; then
                      echo "The parameter ${parameter} was set as an input. This parameter is set within \

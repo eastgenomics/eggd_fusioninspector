@@ -8,6 +8,11 @@ https://github.com/FusionInspector/FusionInspector
 https://github.com/FusionInspector/FusionInspector/wiki
 
 ## What inputs are required for this app to run?
+
+### Packages
+* Python packages (specified in requirements.txt)
+
+### Input arguments
 * The DNA Nexus file ID of a saved FusionInspector Docker image, which should be a compressed '.tar.gz'
 * The file IDs for the Read 1 FASTQ file(s), provided as an array. Files must be compressed and end '.fastq.gz' or 'fq.gz'.
 * The file IDs for the Read 2 FASTQ file(s), provided as an array. Files must be compressed and end '.fastq.gz' or 'fq.gz'.
@@ -86,13 +91,17 @@ Further options available to change in FusionInspector, and obtained by running 
 * --max_sensitivity
 * --extreme_sensitivity
 
-The following options are already set in the app:
+The following arguments are not available though 'opt_parameters' - they are either set and controlled in the app, or have their own DNAnexus input options:
 * --vis 
 * --examine_coding_effect 
 * --extract_fusion_reads_file
 * --CPU
-
-The below option is unlikely to be needed with our workflow:
-* --samples_file SAMPLES_FILE
+* --fusions
+* --left_fq
+* --right_fq
+* --out_prefix
+* --genome_lib_dir
+* --include_Trinity
+* --samples_file
 
 ## This app was made by East GLH
