@@ -178,7 +178,7 @@ eval "${fusion_ins}"
 mark-section "Creating a new, filtered file based on 'FusionInspector.fusions.abridged.tsv.coding_effect', \
  by removing rows where the PROT_FUSION_TYPE annotation column indicates it is out-of-frame"
 
-filtered_filename="${prefix}.FusionInspector.fusions.abridged.tsv.coding_effect.filtered"
+filtered_filename="/home/dnanexus/temp_out/${prefix}.FusionInspector.fusions.abridged.tsv.coding_effect.filtered"
 
 abridged_coding_effect=$(find /home/dnanexus/temp_out -type f -name "*.FusionInspector.fusions.abridged.tsv.coding_effect")
 /usr/bin/time -v python3 filter_on_frame.py \

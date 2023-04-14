@@ -19,10 +19,6 @@ def get_args():
         help=(
             'Output name for the filtered file.'
             )
-    ),
-    parser.add_argument(
-        '--out_dir', required=False, default=os.getcwd(),
-        help="Path to the output directory. Uses current workdir if not specified."
     )
     return parser.parse_args()
 
