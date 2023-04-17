@@ -29,13 +29,21 @@ def filter_on_frame(df):
     :param df:
     :returns a filtered df:
     """
-    filtered_df = df.loc[df["PROT_FUSION_TYPE"] == "INFRAME"]
-    return filtered_df
+    try:
+        filtered_df = df.loc[df["PROT_FUSION_TYPE"] == "INFRAME"]
+        return filtered_df
+    except KeyError:
+        print("The PROT_FUSION_TYPE column was not found - filtering couldn't run")
+        exit(1)
 
 
 def main():
     args = get_args()
-    input_file = pd.read_csv(args.input_file, sep="\t")
+    try:
+        input_file = pd.read_csv(args.input_file, sep="\t")
+    except FileNotFoundError:
+        print("The FusionInspector coding-effect-annotated abridged file was not found - filtering couldn't run")
+        exit(1)
     output_df = filter_on_frame(input_file)
     output_df.to_csv(args.outname, sep="\t", index=False)
 
