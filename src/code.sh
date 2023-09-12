@@ -16,15 +16,15 @@ mkdir /home/dnanexus/r2_fastqs
 mkdir /home/dnanexus/known_fusions
 mkdir /home/dnanexus/sr_predictions
 
-find ./in/r1_fastqs -type f -name "*R1*" -print0 | xargs -0 -I {} mv {} ./r1_fastqs
-find ./in/r2_fastqs -type f -name "*R2*" -print0 | xargs -0 -I {} mv {} ./r2_fastqs
+find ./in/r1_fastqs -type f -name "*_R1_*" -print0 | xargs -0 -I {} mv {} ./r1_fastqs
+find ./in/r2_fastqs -type f -name "*_R2_*" -print0 | xargs -0 -I {} mv {} ./r2_fastqs
 find ./in/known_fusions -type f -name "*.txt*" -print0 | xargs -0 -I {} mv {} ./known_fusions
 find ./in/sr_predictions -type f -print0 | xargs -0 -I {} mv {} ./sr_predictions
 
 # form array:file uploads in a comma-separated list - prepend '/data/' path, for use in Docker
-read_1=$(find ./r1_fastqs/ -type f -name "*" -name "*R1*.f*" | \
+read_1=$(find ./r1_fastqs/ -type f -name "*" -name "*_R1_*.f*" | \
 sed 's/\.\///g' | sed -e 's/^/\/data\//' | paste -sd, -)
-read_2=$(find ./r2_fastqs/ -type f -name "*" -name "*R2*.f*" | \
+read_2=$(find ./r2_fastqs/ -type f -name "*" -name "*_R2_*.f*" | \
 sed 's/\.\///g' | sed -e 's/^/\/data\//' | paste -sd, -)
 known_fusions=$(find ./known_fusions/ -type f -name "*" | \
 sed 's/\.\///g' | sed -e 's/^/\/data\//' | paste -sd, -)
@@ -48,9 +48,9 @@ NUMBER_THREADS=${INSTANCE##*_x}
 mark-section "Running tests to sense-check R1/R2 arrays and file prefixes"
 # Check that there are the same number of R1s as R2s
 cd /home/dnanexus/r1_fastqs
-R1=($(ls *R1*))
+R1=($(ls *_R1_*))
 cd /home/dnanexus/r2_fastqs
-R2=($(ls *R2*))
+R2=($(ls *_R2_*))
 cd /home/dnanexus
 if [[ ${#R1[@]} -ne ${#R2[@]} ]]; then 
        echo "The number of R1 and R2 files for this sample are not equal - exiting"
@@ -81,8 +81,8 @@ _trim_fastq_endings () {
        echo ${fastq_array[@]}
 }
 
-R1_test=$(_trim_fastq_endings "R1" ${R1[@]})
-R2_test=$(_trim_fastq_endings "R2" ${R2[@]})
+R1_test=$(_trim_fastq_endings "_R1_" ${R1[@]})
+R2_test=$(_trim_fastq_endings "_R2_" ${R2[@]})
 
 # Test that when "R1" and "R2" are removed the two arrays have identical file names
 for i in "${!R1_test[@]}"; do
