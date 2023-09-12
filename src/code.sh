@@ -3,6 +3,10 @@
 # fail on any error
 set -exo pipefail
 
+mark-section "Installing Python packages"
+export PATH=$PATH:/home/dnanexus/.local/bin  # pip installs some packages here, add to path
+sudo -H python3 -m pip install --no-index --no-deps packages/*
+
 # download all inputs, untar plug-n-play resources, and get its path
 mark-section "Download inputs and set up initial directories and values"
 dx-download-all-inputs
@@ -119,6 +123,7 @@ mkdir "/home/dnanexus/temp_out"
 mkdir -p "/home/dnanexus/out/fi_abridged"
 mkdir "/home/dnanexus/out/fi_full"
 mkdir "/home/dnanexus/out/fi_coding"
+mkdir "/home/dnanexus/out/fi_frame_filtered"
 mkdir "/home/dnanexus/out/fi_html"
 mkdir "/home/dnanexus/out/fi_fusion_r1"
 mkdir "/home/dnanexus/out/fi_fusion_r2"
@@ -156,7 +161,7 @@ fi
 if [ -n "$opt_parameters" ]; then
        # Test that there are no banned parameters in --parameters input string
        banned_parameters=(--fusions -O --CPU --left_fq --right_fq --out_prefix --genome_lib_dir --vis \
-       --examine_coding_effect --extract_fusion_reads_file --include_Trinity)
+       --examine_coding_effect --extract_fusion_reads_file --include_Trinity --samples_file)
        for parameter in ${banned_parameters[@]}; do
               if [[ "$opt_parameters" == *"$parameter"* ]]; then
                      echo "The parameter ${parameter} was set as an input. This parameter is set within \
@@ -171,6 +176,17 @@ fi
 mark-section "Running FusionInspector"
 eval "${fusion_ins}"
 
+mark-section "Creating a new, filtered file based on 'FusionInspector.fusions.abridged.tsv.coding_effect', \
+ by removing rows where the PROT_FUSION_TYPE annotation column indicates it is out-of-frame"
+
+filtered_filepath="/home/dnanexus/temp_out/${prefix}.FusionInspector.fusions.abridged.coding_effect.filtered.tsv"
+filtered_filename="${prefix}.FusionInspector.fusions.abridged.tsv.coding_effect.filtered.tsv"
+
+abridged_coding_effect=$(find /home/dnanexus/temp_out -type f -name "*.FusionInspector.fusions.abridged.tsv.coding_effect")
+/usr/bin/time -v python3 filter_on_frame.py \
+--input_file "$abridged_coding_effect" \
+--outname "$filtered_filepath"
+
 
 mark-section "Move results files to their output directories"
 
@@ -182,6 +198,9 @@ xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_full/{}
 
 find /home/dnanexus/temp_out -type f -name "*.FusionInspector.fusions.abridged.tsv.coding_effect" -printf "%f\n" | \
 xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_coding/{} 
+
+find /home/dnanexus/temp_out -type f -name "$filtered_filename" -printf "%f\n" | \
+xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_frame_filtered/{} 
 
 find /home/dnanexus/temp_out -type f -name "*.fusion_inspector_web.html" -printf "%f\n" | \
 xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_html/{}

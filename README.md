@@ -8,6 +8,11 @@ https://github.com/FusionInspector/FusionInspector
 https://github.com/FusionInspector/FusionInspector/wiki
 
 ## What inputs are required for this app to run?
+
+### Packages
+* Python packages (specified in requirements.txt)
+
+### Input arguments
 * The DNA Nexus file ID of a saved FusionInspector Docker image, which should be a compressed '.tar.gz'
 * The file IDs for the Read 1 FASTQ file(s), provided as an array. Files must be compressed and end '.fastq.gz' or 'fq.gz'.
 * The file IDs for the Read 2 FASTQ file(s), provided as an array. Files must be compressed and end '.fastq.gz' or 'fq.gz'.
@@ -41,7 +46,8 @@ https://github.com/FusionInspector/FusionInspector/wiki
 * The following outputs are produced both with and without Trinity being run:
     * fi_full: a full set of outputs from FusionInspector, as a tsv file.
     * fi_abridged: an abridged version of the FusionInspector output, as a tsv file.
-    * fi_coding: the abridged FusionInspector output containing additional information about potential coding effect, a tsv file 
+    * fi_coding: the abridged FusionInspector output containing additional information about potential coding effect, a tsv file.
+    * fi_frame_filtered: fi_coding but with all non-INFRAME fusions filtered out. 
     * fi_html: a HTML of fusion evidence which can be viewed in-browser.
     * fi_fusion_r1: read 1s which FusionInspector mapped to the fusions, as a gzipped FASTQ file.
     * fi_fusion_r2: read 2s which FusionInspector mapped to the fusions, as a gzipped FASTQ file.
@@ -85,13 +91,17 @@ Further options available to change in FusionInspector, and obtained by running 
 * --max_sensitivity
 * --extreme_sensitivity
 
-The following options are already set in the app:
+The following arguments are not available though 'opt_parameters' - they are either set and controlled in the app, or have their own DNAnexus input options:
 * --vis 
 * --examine_coding_effect 
 * --extract_fusion_reads_file
 * --CPU
-
-The below option is unlikely to be needed with our workflow:
-* --samples_file SAMPLES_FILE
+* --fusions
+* --left_fq
+* --right_fq
+* --out_prefix
+* --genome_lib_dir
+* --include_Trinity
+* --samples_file
 
 ## This app was made by East GLH
