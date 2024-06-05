@@ -1,7 +1,7 @@
 {
-  "name": "eggd_fusioninspector",
-  "title": "eggd_fusioninspector",
-  "summary": "App which runs FusionInspector from its official Docker image. It identifies fusions using known 'rescue list' fusion pairs, plus predictions from STAR-Fusion",
+  "name": "eggd_fusioninspector_test",
+  "title": "eggd_fusioninspector_test",
+  "summary": "App which runs FusionInspector from its official Docker image. It identifies fusions using known 'rescue list' fusion pairs, plus predictions from STAR-Fusion with additional check statements",
   "dxapi": "1.0.0",
   "version": "1.0.0",
   "inputSpec": [
