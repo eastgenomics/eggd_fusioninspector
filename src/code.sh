@@ -149,6 +149,7 @@ fusion_ins="docker run -v ${wd}:/data --rm \
        --vis \
        --examine_coding_effect \
        --extract_fusion_reads_file /data/temp_out/${prefix}"
+echo $fusion_ins
 
 
 # run FusionInspector, adding an arg to run Trinity if requested by user, and adding optional user-entered parameters if any 
