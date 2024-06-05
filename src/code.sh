@@ -24,13 +24,17 @@ find ./in/sr_predictions -type f -print0 | xargs -0 -I {} mv {} ./sr_predictions
 # form array:file uploads in a comma-separated list - prepend '/data/' path, for use in Docker
 read_1=$(find ./r1_fastqs/ -type f -name "*" -name "*_R1_*.f*" | \
 sed 's/\.\///g' | sed -e 's/^/\/data\//' | paste -sd, -)
+echo $read_1
 read_2=$(find ./r2_fastqs/ -type f -name "*" -name "*_R2_*.f*" | \
 sed 's/\.\///g' | sed -e 's/^/\/data\//' | paste -sd, -)
+echo $read_2
 known_fusions=$(find ./known_fusions/ -type f -name "*" | \
 sed 's/\.\///g' | sed -e 's/^/\/data\//' | paste -sd, -)
+echo $known_fusions
 
 # remove header line from STAR-Fusion predicted fusions for Docker
 sr_predictions_name=$(find /home/dnanexus/sr_predictions -type f -printf "%f\n")
+echo $sr_predictions
 
 # Get FusionInspector Docker image by its ID
 docker load -i /home/dnanexus/in/fi_docker/*.tar.gz
