@@ -142,6 +142,20 @@
       "class": "file",
       "optional": true,
       "help": "BED file of reconstructed fusion transcript alignments - generated if Trinity option is run"
+    },
+    {
+      "name": "fi_inspected_fusions",
+      "label": "fi_inspected_fusions",
+      "class": "file",
+      "optional": true,
+      "help": "A list of fusions inspected by FusionInspector"
+    },
+    {
+      "name": "fi_missed_fusions",
+      "label": "fi_missed_fusions",
+      "class": "file",
+      "optional": true,
+      "help": "A list of fusions not analysed by FusionInspector"
     }
   ],
   "runSpec": {
