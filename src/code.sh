@@ -132,6 +132,7 @@ fi
 # set up the FusionInspector command 
 mark-section "Set up basic FusionInspector command prior to running"
 wd="$(pwd)"
+out_filename=${prefix}_${known_fusions%%-*}
 fusion_ins="docker run -v ${wd}:/data --rm \
        ${DOCKER_IMAGE_ID} \
        FusionInspector \
@@ -140,11 +141,11 @@ fusion_ins="docker run -v ${wd}:/data --rm \
        --CPU ${NUMBER_THREADS} \
        --left_fq ${read_1} \
        --right_fq ${read_2} \
-       --out_prefix ${prefix} \
+       --out_prefix ${out_filename} \
        --genome_lib_dir /data/${lib_dir}/ctat_genome_lib_build_dir \
        --vis \
        --examine_coding_effect \
-       --extract_fusion_reads_file /data/temp_out/${prefix}"
+       --extract_fusion_reads_file /data/temp_out/${out_filename}"
 
 
 # run FusionInspector, adding an arg to run Trinity if requested by user, and adding optional user-entered parameters if any 
@@ -172,13 +173,19 @@ mark-section "Running FusionInspector"
 eval "${fusion_ins}"
 
 mark-section "Check what fusion contigs were selected from the BAM file"
-cut -f 1 /home/dnanexus/temp_out/*.consolidated.bam.frag_coords | sort | uniq > ${prefix}_fusion_contigs_inspected.txt
+cut -f 1 /home/dnanexus/temp_out/*.consolidated.bam.frag_coords | sort | uniq > ${out_filename}_fusion_contigs_inspected.txt
 
 cat ${known_fusions} /data/sr_predictions/${sr_predictions_name} > fusion_rescue_list.txt
-diff <(cut -f 1 ${prefix}_fusion_contigs_inspected.txts | sort | uniq) \
-<(sort fusion_rescue_list.txt | uniq) | grep ">" | cut -d " " -f 2 > ${prefix}_missed_fusion_contigs.txt
+diff <(cut -f 1 ${out_filename}_fusion_contigs_inspected.txts | sort | uniq) \
+<(sort fusion_rescue_list.txt | uniq) | grep ">" | cut -d " " -f 2 > ${out_filename}_missed_fusion_contigs.txt
 
 mark-section "Move results files to their output directories"
+
+find /home/dnanexus -type f -name ${out_filename}_fusion_contigs_inspected.txt -printf "%f\n" | \
+xargs -I{} mv /home/dnanexus/{} /home/dnanexus/out/fi_inspected_fusions/{}
+
+find /home/dnanexus -type f -name ${out_filename}_missed_fusion_contigs.txt -printf "%f\n" | \
+xargs -I{} mv /home/dnanexus/{} /home/dnanexus/out/fi_missed_fusions/{}
 
 find /home/dnanexus/temp_out -type f -name "*.FusionInspector.fusions.abridged.tsv" -printf "%f\n" | \
 xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_abridged/{}
@@ -193,16 +200,16 @@ find /home/dnanexus/temp_out -type f -name "*.fusion_inspector_web.html" -printf
 xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_html/{}
 
 # change fusion_evidence_reads .fq endings to .fastq in place, and zip
-find /home/dnanexus/temp_out -type f -name "${prefix}.fusion_evidence_reads_*" \
+find /home/dnanexus/temp_out -type f -name "${out_filename}.fusion_evidence_reads_*" \
 | grep \.fq$ | sed 'p;s/\.fq/\.fastq/' | xargs -n2 mv
 
-find /home/dnanexus/temp_out -type f -name "${prefix}.fusion_evidence_reads_*.fastq" -exec gzip {} \;
+find /home/dnanexus/temp_out -type f -name "${out_filename}.fusion_evidence_reads_*.fastq" -exec gzip {} \;
 
 # move fusion_evidence_reads
-find /home/dnanexus/temp_out -type f -name "${prefix}.fusion_evidence_reads_*1*.fastq.gz" -printf "%f\n" | \
+find /home/dnanexus/temp_out -type f -name "${out_filename}.fusion_evidence_reads_*1*.fastq.gz" -printf "%f\n" | \
 xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_fusion_r1/{}
 
-find /home/dnanexus/temp_out -type f -name "${prefix}.fusion_evidence_reads_*2*.fastq.gz" -printf "%f\n" | \
+find /home/dnanexus/temp_out -type f -name "${out_filename}.fusion_evidence_reads_*2*.fastq.gz" -printf "%f\n" | \
 xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_fusion_r2/{}
 
 if [ "$include_trinity" = "true" ]; then
