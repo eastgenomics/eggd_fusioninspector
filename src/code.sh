@@ -132,7 +132,8 @@ fi
 # set up the FusionInspector command 
 mark-section "Set up basic FusionInspector command prior to running"
 wd="$(pwd)"
-out_filename=${prefix}_${known_fusions%%-*}
+fusion_list=${known_fusions##*/}
+out_filename=${prefix}_${fusion_list%%-*}
 fusion_ins="docker run -v ${wd}:/data --rm \
        ${DOCKER_IMAGE_ID} \
        FusionInspector \
