@@ -42,7 +42,7 @@
       "patterns": [
         "*.txt"
       ],
-      "help": "Any number of .txt files of known fusions which should be searched for. First column must be in format 'geneA--geneB'. Additional columns should be tab-delimited and are not used by the app."
+      "help": "A .txt file of known fusions which should be searched for. First column must be in format 'geneA--geneB'. Additional columns should be tab-delimited and are not used by the app."
     },
     {
       "name": "sr_predictions",
@@ -142,6 +142,20 @@
       "class": "file",
       "optional": true,
       "help": "BED file of reconstructed fusion transcript alignments - generated if Trinity option is run"
+    },
+    {
+      "name": "fi_inspected_fusions",
+      "label": "fi_inspected_fusions",
+      "class": "file",
+      "optional": true,
+      "help": "A txt file containing a list of fusions inspected by FusionInspector"
+    },
+    {
+      "name": "fi_missed_fusions",
+      "label": "fi_missed_fusions",
+      "class": "file",
+      "optional": true,
+      "help": "A txt file containing a list of fusions not analysed by FusionInspector"
     }
   ],
   "runSpec": {
