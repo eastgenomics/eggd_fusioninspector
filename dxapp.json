@@ -148,14 +148,14 @@
       "label": "fi_inspected_fusions",
       "class": "file",
       "optional": true,
-      "help": "A list of fusions inspected by FusionInspector"
+      "help": "A txt file containing a list of fusions inspected by FusionInspector"
     },
     {
       "name": "fi_missed_fusions",
       "label": "fi_missed_fusions",
       "class": "file",
       "optional": true,
-      "help": "A list of fusions not analysed by FusionInspector"
+      "help": "A txt file containing a list of fusions not analysed by FusionInspector"
     }
   ],
   "runSpec": {
