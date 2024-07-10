@@ -122,6 +122,8 @@ mkdir "/home/dnanexus/out/fi_coding"
 mkdir "/home/dnanexus/out/fi_html"
 mkdir "/home/dnanexus/out/fi_fusion_r1"
 mkdir "/home/dnanexus/out/fi_fusion_r2"
+mkdir "/home/dnanexus/out/fi_inspected_fusions"
+mkdir "/home/dnanexus/out/fi_missed_fusions"
 if [ "$include_trinity" = "true" ]; then
        mkdir "/home/dnanexus/out/fi_trinity_fasta"
        mkdir "/home/dnanexus/out/fi_trinity_gff"
@@ -175,10 +177,9 @@ eval "${fusion_ins}"
 
 mark-section "Check what fusion contigs were selected from the BAM file"
 cut -f 1 /home/dnanexus/temp_out/*.consolidated.bam.frag_coords | sort | uniq > ${out_filename}_fusion_contigs_inspected.txt
+tail -n +2 /home/dnanexus/sr_predictions/${sr_predictions_name}  | cut -f 1 | cat /home/dnanexus/known_fusions/${fusion_list} - | sort | uniq > fusion_rescue_list.txt
 
-cat ${known_fusions} /data/sr_predictions/${sr_predictions_name} > fusion_rescue_list.txt
-diff <(cut -f 1 ${out_filename}_fusion_contigs_inspected.txts | sort | uniq) \
-<(sort fusion_rescue_list.txt | uniq) | grep ">" | cut -d " " -f 2 > ${out_filename}_missed_fusion_contigs.txt
+comm -13 ${out_filename}_fusion_contigs_inspected.txt fusion_rescue_list.txt > ${out_filename}_missed_fusion_contigs.txt
 
 mark-section "Move results files to their output directories"
 
