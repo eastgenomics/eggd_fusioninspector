@@ -1,61 +1,20 @@
 #!/bin/bash
 
-# fail on any error
-set -exo pipefail
-
-# download all inputs, untar plug-n-play resources, and get its path
-mark-section "Download inputs and set up initial directories and values"
-dx-download-all-inputs
-tar -xf /home/dnanexus/in/genome_lib/*.tar.gz -C /home/dnanexus/
-lib_dir=$(find . -type d -name "*CTAT_lib*")
-
-# move array:file uploads into more sensible directories
-# this is done to make finding files easier because, by default, every file in the array goes into a numbered dir on its own
-mkdir /home/dnanexus/r1_fastqs
-mkdir /home/dnanexus/r2_fastqs
-mkdir /home/dnanexus/known_fusions
-mkdir /home/dnanexus/sr_predictions
-
-find ./in/r1_fastqs -type f -name "*_R1_*" -print0 | xargs -0 -I {} mv {} ./r1_fastqs
-find ./in/r2_fastqs -type f -name "*_R2_*" -print0 | xargs -0 -I {} mv {} ./r2_fastqs
-find ./in/known_fusions -type f -name "*.txt*" -print0 | xargs -0 -I {} mv {} ./known_fusions
-find ./in/sr_predictions -type f -print0 | xargs -0 -I {} mv {} ./sr_predictions
-
-# form array:file uploads in a comma-separated list - prepend '/data/' path, for use in Docker
-read_1=$(find ./r1_fastqs/ -type f -name "*" -name "*_R1_*.f*" | \
-sed 's/\.\///g' | sed -e 's/^/\/data\//' | paste -sd, -)
-read_2=$(find ./r2_fastqs/ -type f -name "*" -name "*_R2_*.f*" | \
-sed 's/\.\///g' | sed -e 's/^/\/data\//' | paste -sd, -)
-known_fusions=$(find ./known_fusions/ -type f -name "*" | \
-sed 's/\.\///g' | sed -e 's/^/\/data\//' | paste -sd, -)
-
-# remove header line from STAR-Fusion predicted fusions for Docker
-sr_predictions_name=$(find /home/dnanexus/sr_predictions -type f -printf "%f\n")
-
-# Get FusionInspector Docker image by its ID
-docker load -i /home/dnanexus/in/fi_docker/*.tar.gz
-DOCKER_IMAGE_ID=$(docker images --format="{{.Repository}} {{.ID}}" | grep "^trinityctat/fusioninspector" | cut -d' ' -f2)
-
-# get the sample name from the chimeric file
-prefix=$(echo "$sr_predictions_name" | cut -d '.' -f 1)
-
-# Obtain instance information to set CPU flexibly
-INSTANCE=$(dx describe --json $DX_JOB_ID | jq -r '.instanceType')  # Extract instance type
-NUMBER_THREADS=${INSTANCE##*_x}
-
-
-## Tests
-mark-section "Running tests to sense-check R1/R2 arrays and file prefixes"
-# Check that there are the same number of R1s as R2s
-cd /home/dnanexus/r1_fastqs
-R1=($(ls *_R1_*))
-cd /home/dnanexus/r2_fastqs
-R2=($(ls *_R2_*))
-cd /home/dnanexus
-if [[ ${#R1[@]} -ne ${#R2[@]} ]]; then 
-       echo "The number of R1 and R2 files for this sample are not equal - exiting"
-       exit 1
-fi
+# Test that the start of the read files (without lanes), begin with the expected 'prefix' taken from the 
+#STAR-Fusion predictions
+_compare_fastq_name_to_prefix () {
+       # Takes an array of FASTQ names with reads and file-endings already cut out.
+       # Identify and cut out the sample name. Compare rest of name to StarFusion file prefix. Exit if mismatch.
+       local fastq_array=("$@")
+       local prefix=$1
+       for i in "${fastq_array[@]}"; do
+              lane_cut_off=$(echo $i | cut -d '_' -f 1)
+              if [[ ! "$lane_cut_off" == "$prefix" ]]; then 
+                     echo "Start of filename does not match expected prefix taken from STAR-Fusion file: $i - exiting"  
+                     exit 1
+              fi
+       done
+}
 
 # Check that each R1 has a matching R2
 # Remove "R1" and "R2" and the file suffix from all file names
@@ -81,150 +40,212 @@ _trim_fastq_endings () {
        echo ${fastq_array[@]}
 }
 
-R1_test=$(_trim_fastq_endings "_R1_" ${R1[@]})
-R2_test=$(_trim_fastq_endings "_R2_" ${R2[@]})
+_download_all_inputs () {
+       : '''
+       Download all inputs, untar plug-n-play resources, and get its path
+       '''
+       dx-download-all-inputs
+       tar -xf /home/dnanexus/in/genome_lib/*.tar.gz -C /home/dnanexus/
 
-# Test that when "R1" and "R2" are removed the two arrays have identical file names
-for i in "${!R1_test[@]}"; do
-       if [[ ! "${R2_test}" =~ "${R1_test[$i]}" ]]; then 
-              echo "Each R1 FASTQ does not appear to have a matching R2 FASTQ"
-              echo "${R2_test} ${R1_test[$i]}"
-              exit 1 
-       fi
-done
-
-# Test that the start of the read files (without lanes), begin with the expected 'prefix' taken from the 
-#STAR-Fusion predictions
-_compare_fastq_name_to_prefix () {
-       # Takes an array of FASTQ names with reads and file-endings already cut out.
-       # Identify and cut out the sample name. Compare rest of name to StarFusion file prefix. Exit if mismatch.
-       local fastq_array=("$@")
-       local prefix=$1
-       for i in "${fastq_array[@]}"; do
-              lane_cut_off=$(echo $i | cut -d '_' -f 1)
-              if [[ ! "$lane_cut_off" == "$prefix" ]]; then 
-                     echo "Start of filename does not match expected prefix taken from STAR-Fusion file: $i - exiting"  
-                     exit 1
-              fi
-       done
 }
 
-_compare_fastq_name_to_prefix "$prefix" ${R1_test}
-_compare_fastq_name_to_prefix "$prefix" ${R2_test}
+_sense_check_fastq_arrays () {
+       : '''
+       Running tests to sense-check R1/R2 arrays and file prefixes
+       '''
+       # Check that there are the same number of R1s as R2s
+       cd /home/dnanexus/r1_fastqs
+       R1=($(ls *_R1_*))
+       cd /home/dnanexus/r2_fastqs
+       R2=($(ls *_R2_*))
+       cd /home/dnanexus
+       if [[ ${#R1[@]} -ne ${#R2[@]} ]]; then 
+              echo "The number of R1 and R2 files for this sample are not equal - exiting"
+              exit 1
+       fi
 
+       R1_test=$(_trim_fastq_endings "_R1_" ${R1[@]})
+       R2_test=$(_trim_fastq_endings "_R2_" ${R2[@]})
 
-# make temporary and final output dirs
-mark-section "Make temporary and final output directories"
-mkdir "/home/dnanexus/temp_out"
-mkdir -p "/home/dnanexus/out/fi_abridged"
-mkdir "/home/dnanexus/out/fi_full"
-mkdir "/home/dnanexus/out/fi_coding"
-mkdir "/home/dnanexus/out/fi_html"
-mkdir "/home/dnanexus/out/fi_fusion_r1"
-mkdir "/home/dnanexus/out/fi_fusion_r2"
-mkdir "/home/dnanexus/out/fi_inspected_fusions"
-mkdir "/home/dnanexus/out/fi_missed_fusions"
-if [ "$include_trinity" = "true" ]; then
-       mkdir "/home/dnanexus/out/fi_trinity_fasta"
-       mkdir "/home/dnanexus/out/fi_trinity_gff"
-       mkdir "/home/dnanexus/out/fi_trinity_bed"
-fi
-
-
-# set up the FusionInspector command 
-mark-section "Set up basic FusionInspector command prior to running"
-wd="$(pwd)"
-fusion_list=${known_fusions##*/}
-out_filename=${prefix}_${fusion_list%%-*}
-fusion_ins="docker run -v ${wd}:/data --rm \
-       ${DOCKER_IMAGE_ID} \
-       FusionInspector \
-       --fusions "${known_fusions},/data/sr_predictions/${sr_predictions_name}" \
-       -O /data/temp_out \
-       --CPU ${NUMBER_THREADS} \
-       --left_fq ${read_1} \
-       --right_fq ${read_2} \
-       --out_prefix ${out_filename} \
-       --genome_lib_dir /data/${lib_dir}/ctat_genome_lib_build_dir \
-       --vis \
-       --examine_coding_effect \
-       --extract_fusion_reads_file /data/temp_out/${out_filename}"
-
-
-# run FusionInspector, adding an arg to run Trinity if requested by user, and adding optional user-entered parameters if any 
-if [ "$include_trinity" = "true" ]; then
-       mark-section "Adding Trinity de novo reconstruction option to FusionInspector command"
-       fusion_ins="${fusion_ins} --include_Trinity"
-fi
-
-if [ -n "$opt_parameters" ]; then
-       # Test that there are no banned parameters in --parameters input string
-       banned_parameters=(--fusions -O --CPU --left_fq --right_fq --out_prefix --genome_lib_dir --vis \
-       --examine_coding_effect --extract_fusion_reads_file --include_Trinity)
-       for parameter in ${banned_parameters[@]}; do
-              if [[ "$opt_parameters" == *"$parameter"* ]]; then
-                     echo "The parameter ${parameter} was set as an input. This parameter is set within \
-                     the app and cannot be set as an input. Please repeat without this parameter"
-                     exit 1
+       # Test that when "R1" and "R2" are removed the two arrays have identical file names
+       for i in "${!R1_test[@]}"; do
+              if [[ ! "${R2_test}" =~ "${R1_test[$i]}" ]]; then 
+                     echo "Each R1 FASTQ does not appear to have a matching R2 FASTQ"
+                     echo "${R2_test} ${R1_test[$i]}"
+                     exit 1 
               fi
        done
-       mark-section "Adding additional user-entered parameters to FusionInspector command"
-       fusion_ins="${fusion_ins} ${opt_parameters}"
-fi
 
-mark-section "Running FusionInspector"
-eval "${fusion_ins}"
+       _compare_fastq_name_to_prefix "$prefix" ${R1_test}
+       _compare_fastq_name_to_prefix "$prefix" ${R2_test}
 
-mark-section "Check what fusion contigs were selected from the BAM file"
-cut -f 1 /home/dnanexus/temp_out/*.consolidated.bam.frag_coords | sort | uniq > ${out_filename}_fusion_contigs_inspected.txt
-tail -n +2 /home/dnanexus/sr_predictions/${sr_predictions_name}  | cut -f 1 | cat /home/dnanexus/known_fusions/${fusion_list} - | sort | uniq > fusion_rescue_list.txt
+}
 
-comm -13 ${out_filename}_fusion_contigs_inspected.txt fusion_rescue_list.txt > ${out_filename}_missed_fusion_contigs.txt
+_move_downloaded_files ()  {
+       # this is done to make finding files easier because, by default, every file in the array goes into a numbered dir on its own
+       mkdir /home/dnanexus/r1_fastqs
+       mkdir /home/dnanexus/r2_fastqs
+       mkdir /home/dnanexus/known_fusions
+       mkdir /home/dnanexus/sr_predictions
 
-mark-section "Move results files to their output directories"
+       find ./in/r1_fastqs -type f -name "*_R1_*" -print0 | xargs -0 -I {} mv {} ./r1_fastqs
+       find ./in/r2_fastqs -type f -name "*_R2_*" -print0 | xargs -0 -I {} mv {} ./r2_fastqs
+       find ./in/known_fusions -type f -name "*.txt*" -print0 | xargs -0 -I {} mv {} ./known_fusions
+       find ./in/sr_predictions -type f -print0 | xargs -0 -I {} mv {} ./sr_predictions
+}
 
-find /home/dnanexus -type f -name ${out_filename}_fusion_contigs_inspected.txt -printf "%f\n" | \
-xargs -I{} mv /home/dnanexus/{} /home/dnanexus/out/fi_inspected_fusions/{}
+_make_output_folder () {
 
-find /home/dnanexus -type f -name ${out_filename}_missed_fusion_contigs.txt -printf "%f\n" | \
-xargs -I{} mv /home/dnanexus/{} /home/dnanexus/out/fi_missed_fusions/{}
+       mkdir "/home/dnanexus/temp_out"
+       mkdir -p "/home/dnanexus/out/fi_abridged"
+       mkdir "/home/dnanexus/out/fi_full"
+       mkdir "/home/dnanexus/out/fi_coding"
+       mkdir "/home/dnanexus/out/fi_html"
+       mkdir "/home/dnanexus/out/fi_fusion_r1"
+       mkdir "/home/dnanexus/out/fi_fusion_r2"
+       mkdir "/home/dnanexus/out/fi_inspected_fusions"
+       mkdir "/home/dnanexus/out/fi_missed_fusions"
+       if [ "$include_trinity" = "true" ]; then
+              mkdir "/home/dnanexus/out/fi_trinity_fasta"
+              mkdir "/home/dnanexus/out/fi_trinity_gff"
+              mkdir "/home/dnanexus/out/fi_trinity_bed"
+       fi
+}
 
-find /home/dnanexus/temp_out -type f -name "*.FusionInspector.fusions.abridged.tsv" -printf "%f\n" | \
-xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_abridged/{}
+main() {
+       # fail on any error
+       set -exo pipefail
 
-find /home/dnanexus/temp_out -type f -name "*.FusionInspector.fusions.tsv" -printf "%f\n" | \
-xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_full/{}
 
-find /home/dnanexus/temp_out -type f -name "*.FusionInspector.fusions.abridged.tsv.coding_effect" -printf "%f\n" | \
-xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_coding/{} 
+       _download_all_inputs
+       lib_dir=$(find . -type d -name "*CTAT_lib*")
 
-find /home/dnanexus/temp_out -type f -name "*.fusion_inspector_web.html" -printf "%f\n" | \
-xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_html/{}
+       _move_downloaded_files
+       # form array:file uploads in a comma-separated list - prepend '/data/' path, for use in Docker
+       read_1=$(find ./r1_fastqs/ -type f -name "*" -name "*_R1_*.f*" | \
+       sed 's/\.\///g' | sed -e 's/^/\/data\//' | paste -sd, -)
+       read_2=$(find ./r2_fastqs/ -type f -name "*" -name "*_R2_*.f*" | \
+       sed 's/\.\///g' | sed -e 's/^/\/data\//' | paste -sd, -)
+       known_fusions=$(find ./known_fusions/ -type f -name "*" | \
+       sed 's/\.\///g' | sed -e 's/^/\/data\//' | paste -sd, -)
 
-# change fusion_evidence_reads .fq endings to .fastq in place, and zip
-find /home/dnanexus/temp_out -type f -name "${out_filename}.fusion_evidence_reads_*" \
-| grep \.fq$ | sed 'p;s/\.fq/\.fastq/' | xargs -n2 mv
+       # remove header line from STAR-Fusion predicted fusions for Docker
+       sr_predictions_name=$(find /home/dnanexus/sr_predictions -type f -printf "%f\n")
 
-find /home/dnanexus/temp_out -type f -name "${out_filename}.fusion_evidence_reads_*.fastq" -exec gzip {} \;
+       # get FusionInspector Docker image by its ID
+       docker load -i /home/dnanexus/in/fi_docker/*.tar.gz
+       DOCKER_IMAGE_ID=$(docker images --format="{{.Repository}} {{.ID}}" | grep "^trinityctat/fusioninspector" | cut -d' ' -f2)
 
-# move fusion_evidence_reads
-find /home/dnanexus/temp_out -type f -name "${out_filename}.fusion_evidence_reads_*1*.fastq.gz" -printf "%f\n" | \
-xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_fusion_r1/{}
+       # get the sample name from the chimeric file
+       prefix=$(echo "$sr_predictions_name" | cut -d '.' -f 1)
 
-find /home/dnanexus/temp_out -type f -name "${out_filename}.fusion_evidence_reads_*2*.fastq.gz" -printf "%f\n" | \
-xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_fusion_r2/{}
+       # obtain instance information to set CPU flexibly
+       INSTANCE=$(dx describe --json $DX_JOB_ID | jq -r '.instanceType')  # Extract instance type
+       NUMBER_THREADS=${INSTANCE##*_x}
 
-if [ "$include_trinity" = "true" ]; then
-       find /home/dnanexus/temp_out -type f -name "*.gmap_trinity_GG.fusions.fasta" -printf "%f\n" | \
-       xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_trinity_fasta/{}
+       # running tests to sense-check R1/R2 arrays and file prefixes"
+       _sense_check_fastq_arrays
 
-       find /home/dnanexus/temp_out -type f -name "*.gmap_trinity_GG.fusions.gff3" -printf "%f\n" | \
-       xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_trinity_gff/{}
+       # make temporary and final output directories
+       _make_output_folder
 
-       find /home/dnanexus/temp_out -type f -name "*.gmap_trinity_GG.fusions.gff3.bed.sorted.bed.gz" \
-       -printf "%f\n" | xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_trinity_bed/{}
-fi
+       # set up the FusionInspector command 
+       mark-section "Set up basic FusionInspector command prior to running"
+       wd="$(pwd)"
+       fusion_list=${known_fusions##*/}
+       out_filename=${prefix}_${fusion_list%%-*}
+       fusion_ins="docker run -v ${wd}:/data --rm \
+              ${DOCKER_IMAGE_ID} \
+              FusionInspector \
+              --fusions "${known_fusions},/data/sr_predictions/${sr_predictions_name}" \
+              -O /data/temp_out \
+              --CPU ${NUMBER_THREADS} \
+              --left_fq ${read_1} \
+              --right_fq ${read_2} \
+              --out_prefix ${out_filename} \
+              --genome_lib_dir /data/${lib_dir}/ctat_genome_lib_build_dir \
+              --vis \
+              --examine_coding_effect \
+              --extract_fusion_reads_file /data/temp_out/${out_filename}"
 
-mark-section "Upload the final outputs"
-dx-upload-all-outputs --parallel
-mark-success
+
+       # run FusionInspector, adding an arg to run Trinity if requested by user, and adding optional user-entered parameters if any 
+       if [ "$include_trinity" = "true" ]; then
+              mark-section "Adding Trinity de novo reconstruction option to FusionInspector command"
+              fusion_ins="${fusion_ins} --include_Trinity"
+       fi
+
+       if [ -n "$opt_parameters" ]; then
+              # Test that there are no banned parameters in --parameters input string
+              banned_parameters=(--fusions -O --CPU --left_fq --right_fq --out_prefix --genome_lib_dir --vis \
+              --examine_coding_effect --extract_fusion_reads_file --include_Trinity)
+              for parameter in ${banned_parameters[@]}; do
+                     if [[ "$opt_parameters" == *"$parameter"* ]]; then
+                            echo "The parameter ${parameter} was set as an input. This parameter is set within \
+                            the app and cannot be set as an input. Please repeat without this parameter"
+                            exit 1
+                     fi
+              done
+              mark-section "Adding additional user-entered parameters to FusionInspector command"
+              fusion_ins="${fusion_ins} ${opt_parameters}"
+       fi
+
+       mark-section "Running FusionInspector"
+       eval "${fusion_ins}"
+       echo "Code managed to run this far woopwoop!"
+
+       mark-section "Check what fusion contigs were selected from the BAM file"
+       cut -f 1 /home/dnanexus/temp_out/*.consolidated.bam.frag_coords | sort | uniq > ${out_filename}_fusion_contigs_inspected.txt
+       tail -n +2 /home/dnanexus/sr_predictions/${sr_predictions_name}  | cut -f 1 | cat /home/dnanexus/known_fusions/${fusion_list} - | sort | uniq > fusion_rescue_list.txt
+
+       comm -13 ${out_filename}_fusion_contigs_inspected.txt fusion_rescue_list.txt > ${out_filename}_missed_fusion_contigs.txt
+
+       mark-section "Move results files to their output directories"
+
+       find /home/dnanexus -type f -name ${out_filename}_fusion_contigs_inspected.txt -printf "%f\n" | \
+       xargs -I{} mv /home/dnanexus/{} /home/dnanexus/out/fi_inspected_fusions/{}
+
+       find /home/dnanexus -type f -name ${out_filename}_missed_fusion_contigs.txt -printf "%f\n" | \
+       xargs -I{} mv /home/dnanexus/{} /home/dnanexus/out/fi_missed_fusions/{}
+
+       find /home/dnanexus/temp_out -type f -name "*.FusionInspector.fusions.abridged.tsv" -printf "%f\n" | \
+       xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_abridged/{}
+
+       find /home/dnanexus/temp_out -type f -name "*.FusionInspector.fusions.tsv" -printf "%f\n" | \
+       xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_full/{}
+
+       find /home/dnanexus/temp_out -type f -name "*.FusionInspector.fusions.abridged.tsv.coding_effect" -printf "%f\n" | \
+       xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_coding/{} 
+
+       find /home/dnanexus/temp_out -type f -name "*.fusion_inspector_web.html" -printf "%f\n" | \
+       xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_html/{}
+
+       # change fusion_evidence_reads .fq endings to .fastq in place, and zip
+       find /home/dnanexus/temp_out -type f -name "${out_filename}.fusion_evidence_reads_*" \
+       | grep \.fq$ | sed 'p;s/\.fq/\.fastq/' | xargs -n2 mv
+
+       find /home/dnanexus/temp_out -type f -name "${out_filename}.fusion_evidence_reads_*.fastq" -exec gzip {} \;
+
+       # move fusion_evidence_reads
+       find /home/dnanexus/temp_out -type f -name "${out_filename}.fusion_evidence_reads_*1*.fastq.gz" -printf "%f\n" | \
+       xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_fusion_r1/{}
+
+       find /home/dnanexus/temp_out -type f -name "${out_filename}.fusion_evidence_reads_*2*.fastq.gz" -printf "%f\n" | \
+       xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_fusion_r2/{}
+
+       if [ "$include_trinity" = "true" ]; then
+              find /home/dnanexus/temp_out -type f -name "*.gmap_trinity_GG.fusions.fasta" -printf "%f\n" | \
+              xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_trinity_fasta/{}
+
+              find /home/dnanexus/temp_out -type f -name "*.gmap_trinity_GG.fusions.gff3" -printf "%f\n" | \
+              xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_trinity_gff/{}
+
+              find /home/dnanexus/temp_out -type f -name "*.gmap_trinity_GG.fusions.gff3.bed.sorted.bed.gz" \
+              -printf "%f\n" | xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_trinity_bed/{}
+       fi
+
+       mark-section "Upload the final outputs"
+       dx-upload-all-outputs --parallel
+       mark-success
+
+}
