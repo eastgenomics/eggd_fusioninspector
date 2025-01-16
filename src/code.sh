@@ -2,7 +2,7 @@
 
 # Test that the start of the read files (without lanes), begin with the expected 'prefix' taken from the 
 #STAR-Fusion predictions
-_compare_fastq_name_to_prefix () {
+_compare_fastq_name_to_prefix() {
        # Takes an array of FASTQ names with reads and file-endings already cut out.
        # Identify and cut out the sample name. Compare rest of name to StarFusion file prefix. Exit if mismatch.
        local fastq_array=("$@")
@@ -18,7 +18,7 @@ _compare_fastq_name_to_prefix () {
 
 # Check that each R1 has a matching R2
 # Remove "R1" and "R2" and the file suffix from all file names
-_trim_fastq_endings () {
+_trim_fastq_endings() {
        # Trims the endings off R1 or R2 file names in an array, and returns as an array.
        # Identify and cut off suffixes. Export suffix for later use.
        local fastq_array=("$@")
@@ -40,7 +40,7 @@ _trim_fastq_endings () {
        echo ${fastq_array[@]}
 }
 
-_download_all_inputs () {
+_download_all_inputs() {
        : '''
        Download all inputs, untar plug-n-play resources, and get its path
        '''
@@ -49,7 +49,7 @@ _download_all_inputs () {
 
 }
 
-_sense_check_fastq_arrays () {
+_sense_check_fastq_arrays() {
        : '''
        Running tests to sense-check R1/R2 arrays and file prefixes
        '''
@@ -81,7 +81,7 @@ _sense_check_fastq_arrays () {
 
 }
 
-_move_downloaded_files ()  {
+_move_downloaded_files()  {
        # this is done to make finding files easier because, by default, every file in the array goes into a numbered dir on its own
        mkdir /home/dnanexus/r1_fastqs
        mkdir /home/dnanexus/r2_fastqs
@@ -94,7 +94,7 @@ _move_downloaded_files ()  {
        find ./in/sr_predictions -type f -print0 | xargs -0 -I {} mv {} ./sr_predictions
 }
 
-_make_output_folder () {
+_make_output_folder() {
 
        mkdir "/home/dnanexus/temp_out"
        mkdir -p "/home/dnanexus/out/fi_abridged"
@@ -112,59 +112,53 @@ _make_output_folder () {
        fi
 }
 
-main() {
-       # fail on any error
+
+_scatter() {
        set -exo pipefail
 
+       # set frequency of instance usage in logs to 30 seconds
+       kill $(ps aux | grep pcp-dstat | head -n1 | awk '{print $2}')
+       /usr/bin/dx-dstat 30
 
-       _download_all_inputs
-       lib_dir=$(find . -type d -name "*CTAT_lib*")
+       # control how many operations to open in parallel for download / upload
+       THREADS=$(nproc --all)
 
-       _move_downloaded_files
-       # form array:file uploads in a comma-separated list - prepend '/data/' path, for use in Docker
-       read_1=$(find ./r1_fastqs/ -type f -name "*" -name "*_R1_*.f*" | \
-       sed 's/\.\///g' | sed -e 's/^/\/data\//' | paste -sd, -)
-       read_2=$(find ./r2_fastqs/ -type f -name "*" -name "*_R2_*.f*" | \
-       sed 's/\.\///g' | sed -e 's/^/\/data\//' | paste -sd, -)
-       known_fusions=$(find ./known_fusions/ -type f -name "*" | \
-       sed 's/\.\///g' | sed -e 's/^/\/data\//' | paste -sd, -)
+       # create valid empty JSON file for job output, fixes #19
+       echo "{}" > job_output.json
 
-       # remove header line from STAR-Fusion predicted fusions for Docker
-       sr_predictions_name=$(find /home/dnanexus/sr_predictions -type f -printf "%f\n")
-
-       # get FusionInspector Docker image by its ID
-       docker load -i /home/dnanexus/in/fi_docker/*.tar.gz
-       DOCKER_IMAGE_ID=$(docker images --format="{{.Repository}} {{.ID}}" | grep "^trinityctat/fusioninspector" | cut -d' ' -f2)
-
-       # get the sample name from the chimeric file
-       prefix=$(echo "$sr_predictions_name" | cut -d '.' -f 1)
-
-       # obtain instance information to set CPU flexibly
        INSTANCE=$(dx describe --json $DX_JOB_ID | jq -r '.instanceType')  # Extract instance type
        NUMBER_THREADS=${INSTANCE##*_x}
 
-       # running tests to sense-check R1/R2 arrays and file prefixes"
-       _sense_check_fastq_arrays
+       dx-download-all-inputs
 
-       # make temporary and final output directories
-       _make_output_folder
+       dx ls
 
-       # set up the FusionInspector command 
-       mark-section "Set up basic FusionInspector command prior to running"
+       # get FusionInspector Docker image by its ID
+       docker load -i /home/dnanexus/in/docker/*.tar.gz
+       DOCKER_IMAGE_ID=$(docker images --format="{{.Repository}} {{.ID}}" | grep "^trinityctat/fusioninspector" | cut -d' ' -f2)
+
+       SECONDS=0
+
+       set +x
+
+       # download files
+
+       # set up the FusionInspector command
        wd="$(pwd)"
-       fusion_list=${known_fusions##*/}
-       out_filename=${prefix}_${fusion_list%%-*}
+       out_filename=${samplename}_${fusions}
+
+
+       duration=$SECONDS
        fusion_ins="docker run -v ${wd}:/data --rm \
               ${DOCKER_IMAGE_ID} \
               FusionInspector \
-              --fusions "${known_fusions},/data/sr_predictions/${sr_predictions_name}" \
+              --fusions "${fusion}" \
               -O /data/temp_out \
               --CPU ${NUMBER_THREADS} \
-              --left_fq ${read_1} \
-              --right_fq ${read_2} \
+              --left_fq ${left_fq} \
+              --right_fq ${right_fq} \
               --out_prefix ${out_filename} \
-              --genome_lib_dir /data/${lib_dir}/ctat_genome_lib_build_dir \
-              --vis \
+              --genome_lib_dir ${ctat_lib} \
               --examine_coding_effect \
               --extract_fusion_reads_file /data/temp_out/${out_filename}"
 
@@ -190,8 +184,104 @@ main() {
               fusion_ins="${fusion_ins} ${opt_parameters}"
        fi
 
+    {
+       echo "Starting FusionInspector for ${fusion}"
+       SECONDS=0
+       echo $fusion_ins
+       eval $fusion_ins
+
+       echo scatter complete
+    } || {
+        # some form of error occured in running that raised non-zero exit code
+        code=$?
+        echo "ERROR: one or more errors occured running workflow"
+        echo "Process exited with code: ${code}"
+        exit 1
+    }
+
+
+    duration="$SECONDS"
+    echo "Scatter job complete for ${fusion} in $(($duration / 60))m$(($duration % 60))s"
+
+    # _upload_scatter_output
+}
+
+main() {
+       # fail on any error
+       set -exo pipefail
+
+
+       _download_all_inputs
+       lib_dir=$(find . -type d -name "*CTAT_lib*")
+
+       _move_downloaded_files
+       # form array:file uploads in a comma-separated list - prepend '/data/' path, for use in Docker
+       read_1=$(find ./r1_fastqs/ -type f -name "*" -name "*_R1_*.f*" | \
+       sed 's/\.\///g' | sed -e 's/^/\/data\//' | paste -sd, -)
+       read_2=$(find ./r2_fastqs/ -type f -name "*" -name "*_R2_*.f*" | \
+       sed 's/\.\///g' | sed -e 's/^/\/data\//' | paste -sd, -)
+       known_fusions=$(find ./known_fusions/ -type f -name "*" | \
+       sed 's/\.\///g' | sed -e 's/^/\/data\//' | paste -sd, -)
+
+       # get FusionInspector Docker image by its ID
+       docker load -i /home/dnanexus/in/fi_docker/*.tar.gz
+       DOCKER_IMAGE_ID=$(docker images --format="{{.Repository}} {{.ID}}" | grep "^trinityctat/fusioninspector" | cut -d' ' -f2)
+       docker_file=${fi_docker_name##*/}
+
+       echo $docker_file
+       echo $fi_docker
+
+
+       # obtain instance information to set CPU flexibly
+       INSTANCE=$(dx describe --json $DX_JOB_ID | jq -r '.instanceType')  # Extract instance type
+       NUMBER_THREADS=${INSTANCE##*_x}
+
+       # remove header line from STAR-Fusion predicted fusions for Docker
+       sr_predictions_name=$(find /home/dnanexus/sr_predictions -type f -printf "%f\n")
+
+       # running tests to sense-check R1/R2 arrays and file prefixes"
+       # _sense_check_fastq_arrays
+
+       # make temporary and final output directories
+       _make_output_folder
+
        mark-section "Running FusionInspector"
-       eval "${fusion_ins}"
+       # start up job for every fusionlist in scatter mode to run analysis
+
+       ctat_lib=/data/${lib_dir}/ctat_genome_lib_build_dir
+
+
+       # get the sample name from the chimeric file
+       prefix=$(echo "$sr_predictions_name" | cut -d '.' -f 1)
+       known_fusion_file=${known_fusions##*/}
+       out_filename=${prefix}_${fusion_list%%-*}
+
+       fusion_lists="${known_fusion_file} ${sr_predictions_name}"
+       fusion_lists=()
+       fusion_lists+=(${known_fusion_file})
+       fusion_lists+=(${sr_predictions_name})
+       echo $fusion_lists
+
+       for fusion in "${fusion_lists[@]}"; do
+              echo $fusion
+              dx-jobutil-new-job _scatter \
+                     -isamplename="$prefix" \
+                     -ifusions="$fusion" \
+                     -ictat_lib="$ctat_lib" \
+                     -ileft_fq="$read_1" \
+                     -iright_fq="$read_2" \
+                     -iout_prefix="$out_filename" \
+                     -iopt_parameters="$opt_parameters" \
+                     -iinclude_trinity="$include_trinity" \
+                     -idocker="$docker_file" \
+                     --instance-type="$scatter_instance" \
+                     --extra-args='{"priority": "high"}' \
+                     --name "_scatter [${fusion}]" >> job_ids
+       done
+
+       # wait until all scatter jobs complete
+       dx wait --from-file job_ids
+
        echo "Code managed to run this far woopwoop!"
 
        mark-section "Check what fusion contigs were selected from the BAM file"
