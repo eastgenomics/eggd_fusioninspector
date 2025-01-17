@@ -80,20 +80,6 @@ _sense_check_fastq_arrays() {
        _compare_fastq_name_to_prefix "$prefix" ${R2_test}
 
 }
-
-_move_downloaded_files()  {
-       # this is done to make finding files easier because, by default, every file in the array goes into a numbered dir on its own
-       mkdir /home/dnanexus/r1_fastqs
-       mkdir /home/dnanexus/r2_fastqs
-       mkdir /home/dnanexus/known_fusions
-       mkdir /home/dnanexus/sr_predictions
-
-       find ./in/r1_fastqs -type f -name "*_R1_*" -print0 | xargs -0 -I {} mv {} ./r1_fastqs
-       find ./in/r2_fastqs -type f -name "*_R2_*" -print0 | xargs -0 -I {} mv {} ./r2_fastqs
-       find ./in/known_fusions -type f -name "*.txt*" -print0 | xargs -0 -I {} mv {} ./known_fusions
-       find ./in/sr_predictions -type f -print0 | xargs -0 -I {} mv {} ./sr_predictions
-}
-
 _make_output_folder() {
 
        mkdir "/home/dnanexus/temp_out"
@@ -123,7 +109,7 @@ _scatter() {
        # control how many operations to open in parallel for download / upload
        THREADS=$(nproc --all)
 
-       # create valid empty JSON file for job output, fixes #19
+       # create valid empty JSON file for job output
        echo "{}" > job_output.json
 
        INSTANCE=$(dx describe --json $DX_JOB_ID | jq -r '.instanceType')  # Extract instance type
@@ -132,13 +118,6 @@ _scatter() {
        dx-download-all-inputs
        tar -xf /home/dnanexus/in/genome_lib/*.tar.gz -C /home/dnanexus/
        lib_dir=$(find . -type d -name "*CTAT_lib*")
-
-       dx ls
-
-       ls
-       ls in/
-
-
 
        # get FusionInspector Docker image by its ID
        docker load -i /home/dnanexus/in/docker/*.tar.gz
@@ -192,7 +171,7 @@ _scatter() {
        fi
 
     {
-       echo "Starting FusionInspector for ${fusion}"
+       echo "Starting FusionInspector for ${fusion_name}"
        SECONDS=0
        echo $fusion_ins
        eval $fusion_ins
@@ -217,25 +196,10 @@ main() {
        # fail on any error
        set -exo pipefail
 
-
        _download_all_inputs
        lib_dir=$(find . -type d -name "*CTAT_lib*")
 
-       #_move_downloaded_files
-       # form array:file uploads in a comma-separated list - prepend '/data/' path, for use in Docker
-       #read_1=$(find ./r1_fastqs/ -type f -name "*" -name "*_R1_*.f*" | \
-       #sed 's/\.\///g' | sed -e 's/^/\/data\//' | paste -sd, -)
-       #read_2=$(find ./r2_fastqs/ -type f -name "*" -name "*_R2_*.f*" | \
-       #sed 's/\.\///g' | sed -e 's/^/\/data\//' | paste -sd, -)
-       #known_fusions=$(find ./known_fusions/ -type f -name "*" | \
-       #sed 's/\.\///g' | sed -e 's/^/\/data\//' | paste -sd, -)
 
-       # get FusionInspector Docker image by its ID
-       docker load -i /home/dnanexus/in/fi_docker/*.tar.gz
-       DOCKER_IMAGE_ID=$(docker images --format="{{.Repository}} {{.ID}}" | grep "^trinityctat/fusioninspector" | cut -d' ' -f2)
-       docker_file=${fi_docker_name##*/}
-
-       echo $docker_file
 
        # obtain instance information to set CPU flexibly
        INSTANCE=$(dx describe --json $DX_JOB_ID | jq -r '.instanceType')  # Extract instance type
@@ -253,16 +217,16 @@ main() {
        mark-section "Running FusionInspector"
        # start up job for every fusionlist in scatter mode to run analysis
 
-       # get the sample name from the chimeric file
+       # variables to input itnto the app
        prefix=$(echo "$sr_predictions_name" | cut -d '.' -f 1)
        known_fusion_file=$known_fusions_name
-       out_filename=${prefix}_${fusion_list%%-*}
+       docker_file=${fi_docker_name##*/}
 
-       fusion_lists="${known_fusion_file} ${sr_predictions_name}"
+       # make array of fusions list from sr_prediction & known_fusions
        fusion_lists=()
        fusion_lists+=(${known_fusion_file})
        fusion_lists+=(${sr_predictions_name})
-       echo $fusion_lists
+       echo "${fusion_lists[@]}"
 
        for fusion in "${fusion_lists[@]}"; do
               echo $fusion
@@ -272,7 +236,6 @@ main() {
                      -igenome_lib="$genome_lib" \
                      -ileft_fq="$r1_fastqs" \
                      -iright_fq="$r2_fastqs" \
-                     -iout_prefix="$out_filename" \
                      -iopt_parameters="$opt_parameters" \
                      -iinclude_trinity="$include_trinity" \
                      -idocker="$docker_file" \
@@ -283,6 +246,11 @@ main() {
 
        # wait until all scatter jobs complete
        dx wait --from-file job_ids
+
+       #### download all input files
+       # get FusionInspector Docker image by its ID
+       docker load -i /home/dnanexus/in/fi_docker/*.tar.gz
+       DOCKER_IMAGE_ID=$(docker images --format="{{.Repository}} {{.ID}}" | grep "^trinityctat/fusioninspector" | cut -d' ' -f2)
 
        echo "Code managed to run this far woopwoop!"
 
