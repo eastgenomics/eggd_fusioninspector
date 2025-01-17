@@ -77,6 +77,14 @@
       "help": "The optional additional parameters and flags for FusionInspector. Should be space-delimated, and in the format --parameter-name value e.g. --alignIntronMax 100000 --alignSJstitchMismatchNmax 5 -1 5 5",
       "class": "string",
       "optional": true
+    },
+    {
+      "name": "scatter_instance",
+      "label": "",
+      "help": "",
+      "default": "mem1_ssd1_v2_x36",
+      "class": "string",
+      "optional": true
     }
   ],
   "outputSpec": [
@@ -183,7 +191,7 @@
     "aws:eu-central-1": {
       "systemRequirements": {
         "*": {
-          "instanceType": "mem1_ssd1_v2_x36"
+          "instanceType": "mem1_ssd1_v2_x8"
         }
       }
     }
