@@ -189,7 +189,58 @@ _scatter() {
     duration="$SECONDS"
     echo "Scatter job complete for ${fusions_name} in $(($duration / 60))m$(($duration % 60))s"
 
-    # _upload_scatter_output
+    _sub_job_upload_outputs
+}
+
+_get_sub_job_output() {
+    : '''
+    Get the output of GermlineCNVCaller run in each subjob and download back to the parent job.
+
+    Should only be called once all sub jobs have completed from the parent job.
+    '''
+    mark-section "Downloading gCNV job output from sub jobs"
+
+    echo "Waiting 30 seconds to ensure all files are hopefully in a closed state..."
+    sleep 30
+
+    SECONDS=0
+    mkdir tars
+
+    sub_job_tars=$(dx find data --json --path "$DX_WORKSPACE_ID:/FI_output" | jq -r '.[].id')
+    echo "$sub_job_tars" | xargs -P $IO_PROCESSES -n1 -I{} sh -c "dx cat $DX_WORKSPACE_ID:{} | tar xf - -C inputs"
+
+    total=$(du -sh /home/dnanexus/inputs/FI_output/ | cut -f1)
+    duration=$SECONDS
+
+    echo "Downloaded and unpacked $(wc -w <<< "${sub_job_tars}") tar files (${total}) in $(($duration / 60))m$(($duration % 60))s"
+}
+
+_sub_job_upload_outputs() {
+    : '''
+    Util function for _sub_job().
+
+    Uploads required output back to container to be downloaded back to parent job for post processing.
+    Since this is >1000 files for each sub job we will create a single tar to upload to reduce the
+    amount of API queries and avoid rate limits, this will then be downloaded and unpacked in the
+    parent job
+    '''
+    mark-section "Uploading sub job output"
+
+    mkdir -p FI_outputs
+    mv /home/dnanexus/temp_out FI_outputs/
+
+    total_files=$(find FI_outputs/ -type f | wc -l)
+    total_size=$(du -sh FI_outputs/ | cut -f 1)
+
+    SECONDS=0
+    echo "Creating tar from ${total_files} output files (${total_size}) to upload to parent job"
+
+    name=$(jq -r '.name' dnanexus-job.json )
+    time tar -cf "${fusions_name}.tar" FI_outputs/
+    time dx upload "${fusions_name}.tar" --parents --brief --path FI_outputs/
+
+    duration=$SECONDS
+    echo "Created and uploaded ${fusions_name}.tar in $(($duration / 60))m$(($duration % 60))s"
 }
 
 main() {
@@ -245,7 +296,14 @@ main() {
        done
 
        # wait until all scatter jobs complete
+       SECONDS=0
+       echo "$(wc -l job_ids) jobs launched, holding job until all to complete..."
        dx wait --from-file job_ids
+
+       duration=$SECONDS
+       echo "All subjobs completed in $(($duration / 60))m$(($duration % 60))s"
+
+       _get_sub_job_output
 
        #### download all input files
        # get FusionInspector Docker image by its ID
