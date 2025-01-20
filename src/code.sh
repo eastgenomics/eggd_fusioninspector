@@ -131,7 +131,7 @@ _scatter() {
 
        # set up the FusionInspector command
        wd="$(pwd)"
-       out_filename=${samplename}
+       out_filename=${samplename}_${fusions_name%.*}
 
 
        duration=$SECONDS
@@ -192,28 +192,6 @@ _scatter() {
     _sub_job_upload_outputs
 }
 
-_get_sub_job_output() {
-    : '''
-    Get the output of GermlineCNVCaller run in each subjob and download back to the parent job.
-
-    Should only be called once all sub jobs have completed from the parent job.
-    '''
-    mark-section "Downloading gCNV job output from sub jobs"
-
-    echo "Waiting 30 seconds to ensure all files are hopefully in a closed state..."
-    sleep 30
-
-    SECONDS=0
-    mkdir tars
-
-    sub_job_tars=$(dx find data --json --path "$DX_WORKSPACE_ID:/FI_output" | jq -r '.[].id')
-    echo "$sub_job_tars" | xargs -P $IO_PROCESSES -n1 -I{} sh -c "dx cat $DX_WORKSPACE_ID:{} | tar xf - -C inputs"
-
-    total=$(du -sh /home/dnanexus/inputs/FI_output/ | cut -f1)
-    duration=$SECONDS
-
-    echo "Downloaded and unpacked $(wc -w <<< "${sub_job_tars}") tar files (${total}) in $(($duration / 60))m$(($duration % 60))s"
-}
 
 _sub_job_upload_outputs() {
     : '''
@@ -243,6 +221,28 @@ _sub_job_upload_outputs() {
     echo "Created and uploaded ${fusions_name}.tar in $(($duration / 60))m$(($duration % 60))s"
 }
 
+_create_fusion_inspector_report() {
+       ## create report command:
+
+       docker run -v /home/dnanexus:/data --rm $DOCKER_IMAGE_ID  /usr/local/bin/util/create_fusion_inspector_igvjs.py \
+       --fusion_inspector_directory /data/combined_files \
+       --json_outfile /data/temp_out/$prefix.fusion_inspector_web.json \
+       --file_prefix $prefix \
+       --include_Trinity
+
+
+       docker run -v /home/dnanexus:/data --rm $DOCKER_IMAGE_ID  /usr/local/bin/fusion-reports/create_fusion_report.py \
+       --html_template /usr/local/bin/util/fusion_report_html_template/igvjs_fusion.html \
+       --fusions_json /data/combined_files/1$prefix.fusion_inspector_web.json \
+       --input_file_prefix $prefix \
+       --html_output /data/combined_files/$prefix.fusion_inspector_web.html
+}
+
+
+_combine_fusion_inspector_coding_effect() {
+       # python script here?
+}
+
 main() {
        # fail on any error
        set -exo pipefail
@@ -250,7 +250,9 @@ main() {
        _download_all_inputs
        lib_dir=$(find . -type d -name "*CTAT_lib*")
 
-
+       # get FusionInspector Docker image by its ID
+       docker load -i /home/dnanexus/in/fi_docker/*.tar.gz
+       DOCKER_IMAGE_ID=$(docker images --format="{{.Repository}} {{.ID}}" | grep "^trinityctat/fusioninspector" | cut -d' ' -f2)
 
        # obtain instance information to set CPU flexibly
        INSTANCE=$(dx describe --json $DX_JOB_ID | jq -r '.instanceType')  # Extract instance type
@@ -303,12 +305,34 @@ main() {
        duration=$SECONDS
        echo "All subjobs completed in $(($duration / 60))m$(($duration % 60))s"
 
-       _get_sub_job_output
+       for fusion in "${fusion_lists[@]}"; do
+	       echo $fusion
+	       echo ${fusion%.*}
+	       tar_name=$prefix_$fusion.tar
+              mkdir inputs_${fusion%.*}
+              # download the subjob files currently living in the container
+              sub_job_tars=$(dx find data --json --name $tar_name --path "$DX_WORKSPACE_ID:/FI_outputs" | jq -r '.[].id')
+              echo "$sub_job_tars" | xargs -P $IO_PROCESSES -n1 -I{} sh -c "dx cat $DX_WORKSPACE_ID:{} | tar xf - -C inputs_${fusion%.*}"
+       done
+
+       ### merge files to generate the html file
+
+       mkdir combined_files
+
+       find . -type f -name 'cytoBand.txt' -exec cat {} + > combined_files/cytoBand.txt
+       find . -type f -name '*.bed' -exec cat {} + > combined_files/$prefix.bed
+       find . -type f -name '*.fa' -exec cat {} + > combined_files/$prefix.fa
+
+       find . -type f -name '*.junction_reads.bam' -exec samtools merge  {} + -o combined_files/$prefix.junction_reads.bam
+       find . -type f -name '*.spanning_reads.bam' -exec samtools merge  {} + -o combined_files/$prefix.spanning_reads.bam
+       find . -type f -name '*.star.sortedByCoord.out.bam' -exec samtools merge  {} + -o combined_files/$prefix.star.sortedByCoord.out.bam
+
+       _create_fusion_inspector_report
+
+       _combine_fusion_inspector_coding_effect
 
        #### download all input files
-       # get FusionInspector Docker image by its ID
-       docker load -i /home/dnanexus/in/fi_docker/*.tar.gz
-       DOCKER_IMAGE_ID=$(docker images --format="{{.Repository}} {{.ID}}" | grep "^trinityctat/fusioninspector" | cut -d' ' -f2)
+
 
        echo "Code managed to run this far woopwoop!"
 
