@@ -226,22 +226,22 @@ _create_fusion_inspector_report() {
 
        docker run -v /home/dnanexus:/data --rm $DOCKER_IMAGE_ID  /usr/local/bin/util/create_fusion_inspector_igvjs.py \
        --fusion_inspector_directory /data/combined_files \
-       --json_outfile /data/temp_out/$prefix.fusion_inspector_web.json \
+       --json_outfile /data/combined_files/$prefix.fusion_inspector_web.json \
        --file_prefix $prefix \
        --include_Trinity
 
 
        docker run -v /home/dnanexus:/data --rm $DOCKER_IMAGE_ID  /usr/local/bin/fusion-reports/create_fusion_report.py \
        --html_template /usr/local/bin/util/fusion_report_html_template/igvjs_fusion.html \
-       --fusions_json /data/combined_files/1$prefix.fusion_inspector_web.json \
+       --fusions_json /data/combined_files/$prefix.fusion_inspector_web.json \
        --input_file_prefix $prefix \
        --html_output /data/combined_files/$prefix.fusion_inspector_web.html
 }
 
 
-_combine_fusion_inspector_coding_effect() {
+#_combine_fusion_inspector_coding_effect() {
        # python script here?
-}
+#}
 
 main() {
        # fail on any error
@@ -303,7 +303,8 @@ main() {
        dx wait --from-file job_ids
 
        duration=$SECONDS
-       echo "All subjobs completed in $(($duration / 60))m$(($duration % 60))s"
+       echo "All subjobs completed in $(($duration / 60))m$(($duration % 60))s"#
+       IO_PROCESSES=$(nproc --all)
 
        for fusion in "${fusion_lists[@]}"; do
 	       echo $fusion
@@ -319,17 +320,21 @@ main() {
 
        mkdir combined_files
 
-       find . -type f -name 'cytoBand.txt' -exec cat {} + > combined_files/cytoBand.txt
-       find . -type f -name '*.bed' -exec cat {} + > combined_files/$prefix.bed
-       find . -type f -name '*.fa' -exec cat {} + > combined_files/$prefix.fa
+       find . -type f -name 'cytoBand.txt' -exec cat {} + >> combined_files/cytoBand.txt
+       find . -type f -name '*.bed' -exec cat {} + >> combined_files/$prefix.bed
+       find . -type f -name '*.fa' -exec cat {} + >> combined_files/$prefix.fa
+       find . -type f -name '*.gmap_trinity_GG.fusions.gff3.bed.sorted.bed' -exec cat {} + >> combined_files/$prefix.gmap_trinity_GG.fusions.gff3.bed.sorted.bed
+       find . -type f -name "*.FusionInspector.fusions.abridged.tsv" -print0 | xargs -0 awk 'NR==1 {header=$_} FNR==1 && NR!=1 { $_ ~ $header getline; } {print}' >> combined_files/$prefix.FusionInspector.fusions.abridged.tsv
 
-       find . -type f -name '*.junction_reads.bam' -exec samtools merge  {} + -o combined_files/$prefix.junction_reads.bam
-       find . -type f -name '*.spanning_reads.bam' -exec samtools merge  {} + -o combined_files/$prefix.spanning_reads.bam
-       find . -type f -name '*.star.sortedByCoord.out.bam' -exec samtools merge  {} + -o combined_files/$prefix.star.sortedByCoord.out.bam
+       find . -type f -name '*.junction_reads.bam' -exec samtools merge combined_files/$prefix.junction_reads.bam {} +
+       find . -type f -name '*.spanning_reads.bam' -exec samtools merge combined_files/$prefix.spanning_reads.bam {} +
+       find . -type f -name '*.star.sortedByCoord.out.bam' -exec samtools merge combined_files/$prefix.star.sortedByCoord.out.bam {} +
 
        _create_fusion_inspector_report
 
-       _combine_fusion_inspector_coding_effect
+       ls combined_files/
+
+       # _combine_fusion_inspector_coding_effect
 
        #### download all input files
 
