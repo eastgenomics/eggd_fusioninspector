@@ -82,20 +82,12 @@ _sense_check_fastq_arrays() {
 }
 _make_output_folder() {
 
-       mkdir "/home/dnanexus/temp_out"
        mkdir -p "/home/dnanexus/out/fi_abridged"
        mkdir "/home/dnanexus/out/fi_full"
        mkdir "/home/dnanexus/out/fi_coding"
        mkdir "/home/dnanexus/out/fi_html"
-       mkdir "/home/dnanexus/out/fi_fusion_r1"
-       mkdir "/home/dnanexus/out/fi_fusion_r2"
        mkdir "/home/dnanexus/out/fi_inspected_fusions"
        mkdir "/home/dnanexus/out/fi_missed_fusions"
-       if [ "$include_trinity" = "true" ]; then
-              mkdir "/home/dnanexus/out/fi_trinity_fasta"
-              mkdir "/home/dnanexus/out/fi_trinity_gff"
-              mkdir "/home/dnanexus/out/fi_trinity_bed"
-       fi
 }
 
 
@@ -222,15 +214,15 @@ _sub_job_upload_outputs() {
 }
 
 _create_fusion_inspector_report() {
-       ## create report command:
 
+       # create json file needed for html creation. Uses all the files in the combined_files directory
        docker run -v /home/dnanexus:/data --rm $DOCKER_IMAGE_ID  /usr/local/bin/util/create_fusion_inspector_igvjs.py \
        --fusion_inspector_directory /data/combined_files \
        --json_outfile /data/combined_files/$prefix.fusion_inspector_web.json \
        --file_prefix $prefix \
        --include_Trinity
 
-
+       # create html report
        docker run -v /home/dnanexus:/data --rm $DOCKER_IMAGE_ID  /usr/local/bin/fusion-reports/create_fusion_report.py \
        --html_template /usr/local/bin/util/fusion_report_html_template/igvjs_fusion.html \
        --fusions_json /data/combined_files/$prefix.fusion_inspector_web.json \
@@ -239,16 +231,18 @@ _create_fusion_inspector_report() {
 }
 
 
-#_combine_fusion_inspector_coding_effect() {
-       # python script here?
-#}
-
 main() {
        # fail on any error
        set -exo pipefail
 
        _download_all_inputs
        lib_dir=$(find . -type d -name "*CTAT_lib*")
+
+       # samtools in htslib doesn't work as its missing a library, so
+       # will install the missing libraries from the downloaded deb files
+       # (so as to not use internet)
+       sudo dpkg -i libtinfo5_6.2-0ubuntu2_amd64.deb
+       sudo dpkg -i libncurses5_6.2-0ubuntu2_amd64.deb
 
        # get FusionInspector Docker image by its ID
        docker load -i /home/dnanexus/in/fi_docker/*.tar.gz
@@ -263,9 +257,6 @@ main() {
 
        # running tests to sense-check R1/R2 arrays and file prefixes"
        # _sense_check_fastq_arrays
-
-       # make temporary and final output directories
-       _make_output_folder
 
        mark-section "Running FusionInspector"
        # start up job for every fusionlist in scatter mode to run analysis
@@ -320,76 +311,50 @@ main() {
 
        mkdir combined_files
 
-       find . -type f -name 'cytoBand.txt' -exec cat {} + >> combined_files/cytoBand.txt
-       find . -type f -name '*.bed' -exec cat {} + >> combined_files/$prefix.bed
-       find . -type f -name '*.fa' -exec cat {} + >> combined_files/$prefix.fa
-       find . -type f -name '*.gmap_trinity_GG.fusions.gff3.bed.sorted.bed' -exec cat {} + >> combined_files/$prefix.gmap_trinity_GG.fusions.gff3.bed.sorted.bed
+       cat $(find . -type f -name "cytoBand.txt") > combined_files/cytoBand.txt
+       cat $(find . -type f -name "*.bed") > combined_files/$prefix.fa
+       cat $(find . -type f -name "*.gmap_trinity_GG.fusions.gff3.bed.sorted.bed") > combined_files/$prefix.gmap_trinity_GG.fusions.gff3.bed.sorted.bed
+       find . -type f -name "*.FusionInspector.fusions.tsv" -print0 | xargs -0 awk 'NR==1 {header=$_} FNR==1 && NR!=1 { $_ ~ $header getline; } {print}' >> combined_files/$prefix.FusionInspector.fusions.tsv
+       find . -type f -name "*.FusionInspector.fusions.abridged.tsv.coding_effect" -print0 | xargs -0 awk 'NR==1 {header=$_} FNR==1 && NR!=1 { $_ ~ $header getline; } {print}' >> combined_files/$prefix.FusionInspector.fusions.abridged.tsv.coding_effect
        find . -type f -name "*.FusionInspector.fusions.abridged.tsv" -print0 | xargs -0 awk 'NR==1 {header=$_} FNR==1 && NR!=1 { $_ ~ $header getline; } {print}' >> combined_files/$prefix.FusionInspector.fusions.abridged.tsv
 
-       find . -type f -name '*.junction_reads.bam' -exec samtools merge combined_files/$prefix.junction_reads.bam {} +
-       find . -type f -name '*.spanning_reads.bam' -exec samtools merge combined_files/$prefix.spanning_reads.bam {} +
-       find . -type f -name '*.star.sortedByCoord.out.bam' -exec samtools merge combined_files/$prefix.star.sortedByCoord.out.bam {} +
+       find . -type f -name combined_files/$prefix.junction_reads.bam -prune -o -name '*.junction_reads.bam' -exec samtools merge combined_files/$prefix.junction_reads.bam {} +
+       find . -type f -name combined_files/$prefix.spanning_reads.bam -prune -o -name '*.spanning_reads.bam' -exec samtools merge combined_files/$prefix.spanning_reads.bam {} +
+       find . -type f -name combined_files/$prefix.star.sortedByCoord.out.bam -prune -o -name '*.star.sortedByCoord.out.bam' -exec samtools merge combined_files/$prefix.star.sortedByCoord.out.bam {} +
 
        _create_fusion_inspector_report
 
+       mark-section "Check what fusion contigs were selected from the BAM file"
+       cat $(find . -type f -name "*.consolidated.bam.frag_coords") > combined_files/$prefix.consolidated.bam.frag_coords
+       cut -f 1 combined_files/$prefix.consolidated.bam.frag_coords | sort | uniq > combined_files/${prefix}_fusion_contigs_inspected.txt
+       # combine all the fusions we wanted to inspect
+       awk 'NR==1 {header=$_} FNR==1 && NR!=1 { $_ ~ $header getline; } {print}' home/dnanexus/in/known_fusions/*/* > combined_files/fusion_rescue_list.txt
+       # find fusions that were missed
+       comm -13 combined_files/${prefix}_fusion_contigs_inspected.txt combined_files/fusion_rescue_list.txt > combined_files/${prefix}_missed_fusion_contigs.txt
+
        ls combined_files/
 
-       # _combine_fusion_inspector_coding_effect
-
-       #### download all input files
-
-
-       echo "Code managed to run this far woopwoop!"
-
-       mark-section "Check what fusion contigs were selected from the BAM file"
-       cut -f 1 /home/dnanexus/temp_out/*.consolidated.bam.frag_coords | sort | uniq > ${out_filename}_fusion_contigs_inspected.txt
-       tail -n +2 /home/dnanexus/sr_predictions/${sr_predictions_name}  | cut -f 1 | cat /home/dnanexus/known_fusions/${fusion_list} - | sort | uniq > fusion_rescue_list.txt
-
-       comm -13 ${out_filename}_fusion_contigs_inspected.txt fusion_rescue_list.txt > ${out_filename}_missed_fusion_contigs.txt
-
        mark-section "Move results files to their output directories"
+       # make temporary and final output directories
+       _make_output_folder
 
-       find /home/dnanexus -type f -name ${out_filename}_fusion_contigs_inspected.txt -printf "%f\n" | \
-       xargs -I{} mv /home/dnanexus/{} /home/dnanexus/out/fi_inspected_fusions/{}
+       find /home/dnanexus/combined_files -type f -name ${prefix}_fusion_contigs_inspected.txt -printf "%f\n" | \
+       xargs -I{} mv /home/dnanexus/combined_files/{} /home/dnanexus/out/fi_inspected_fusions/{}
 
-       find /home/dnanexus -type f -name ${out_filename}_missed_fusion_contigs.txt -printf "%f\n" | \
-       xargs -I{} mv /home/dnanexus/{} /home/dnanexus/out/fi_missed_fusions/{}
+       find /home/dnanexus/combined_files -type f -name ${prefix}_missed_fusion_contigs.txt -printf "%f\n" | \
+       xargs -I{} mv /home/dnanexus/combined_files{} /home/dnanexus/out/fi_missed_fusions/{}
 
-       find /home/dnanexus/temp_out -type f -name "*.FusionInspector.fusions.abridged.tsv" -printf "%f\n" | \
-       xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_abridged/{}
+       find /home/dnanexus/combined_files -type f -name "*.FusionInspector.fusions.abridged.tsv" -printf "%f\n" | \
+       xargs -I{} mv /home/dnanexus/combined_files/{} /home/dnanexus/out/fi_abridged/{}
 
-       find /home/dnanexus/temp_out -type f -name "*.FusionInspector.fusions.tsv" -printf "%f\n" | \
-       xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_full/{}
+       find /home/dnanexus/combined_files -type f -name "*.FusionInspector.fusions.tsv" -printf "%f\n" | \
+       xargs -I{} mv /home/dnanexus/combined_files/{} /home/dnanexus/out/fi_full/{}
 
-       find /home/dnanexus/temp_out -type f -name "*.FusionInspector.fusions.abridged.tsv.coding_effect" -printf "%f\n" | \
-       xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_coding/{} 
+       find /home/dnanexus/combined_files -type f -name "*.FusionInspector.fusions.abridged.tsv.coding_effect" -printf "%f\n" | \
+       xargs -I{} mv /home/dnanexus/combined_files/{} /home/dnanexus/out/fi_coding/{}
 
-       find /home/dnanexus/temp_out -type f -name "*.fusion_inspector_web.html" -printf "%f\n" | \
-       xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_html/{}
-
-       # change fusion_evidence_reads .fq endings to .fastq in place, and zip
-       find /home/dnanexus/temp_out -type f -name "${out_filename}.fusion_evidence_reads_*" \
-       | grep \.fq$ | sed 'p;s/\.fq/\.fastq/' | xargs -n2 mv
-
-       find /home/dnanexus/temp_out -type f -name "${out_filename}.fusion_evidence_reads_*.fastq" -exec gzip {} \;
-
-       # move fusion_evidence_reads
-       find /home/dnanexus/temp_out -type f -name "${out_filename}.fusion_evidence_reads_*1*.fastq.gz" -printf "%f\n" | \
-       xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_fusion_r1/{}
-
-       find /home/dnanexus/temp_out -type f -name "${out_filename}.fusion_evidence_reads_*2*.fastq.gz" -printf "%f\n" | \
-       xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_fusion_r2/{}
-
-       if [ "$include_trinity" = "true" ]; then
-              find /home/dnanexus/temp_out -type f -name "*.gmap_trinity_GG.fusions.fasta" -printf "%f\n" | \
-              xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_trinity_fasta/{}
-
-              find /home/dnanexus/temp_out -type f -name "*.gmap_trinity_GG.fusions.gff3" -printf "%f\n" | \
-              xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_trinity_gff/{}
-
-              find /home/dnanexus/temp_out -type f -name "*.gmap_trinity_GG.fusions.gff3.bed.sorted.bed.gz" \
-              -printf "%f\n" | xargs -I{} mv /home/dnanexus/temp_out/{} /home/dnanexus/out/fi_trinity_bed/{}
-       fi
+       find /home/dnanexus/combined_files -type f -name "*.fusion_inspector_web.html" -printf "%f\n" | \
+       xargs -I{} mv /home/dnanexus/combined_files/{} /home/dnanexus/out/fi_html/{}
 
        mark-section "Upload the final outputs"
        dx-upload-all-outputs --parallel

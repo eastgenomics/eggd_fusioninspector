@@ -117,41 +117,6 @@
       "help": "A HTML report of FusionInspector-validated fusions"
     },
     {
-      "name": "fi_fusion_r1",
-      "label": "fi_fusion_reads_1",
-      "class": "file",
-      "optional": false,
-      "help": "A gzipped, FASTQ file containing R1 reads which mapped to fusions"
-    },
-    {
-      "name": "fi_fusion_r2",
-      "label": "fi_fusion_reads_2",
-      "class": "file",
-      "optional": false,
-      "help": "A gzipped, FASTQ file containing R2 reads which mapped to fusions"
-    },
-    {
-      "name": "fi_trinity_fasta",
-      "label": "fi_trinity_fasta",
-      "class": "file",
-      "optional": true,
-      "help": "FASTA file of de novo assembled transcript sequences - generated if Trinity option is run"
-    },
-    {
-      "name": "fi_trinity_gff",
-      "label": "fi_trinity_gff",
-      "class": "file",
-      "optional": true,
-      "help": "GFF3 file of reconstructed fusion transcript alignments - generated if Trinity option is run"
-    },
-    {
-      "name": "fi_trinity_bed",
-      "label": "fi_trinity_bed",
-      "class": "file",
-      "optional": true,
-      "help": "BED file of reconstructed fusion transcript alignments - generated if Trinity option is run"
-    },
-    {
       "name": "fi_inspected_fusions",
       "label": "fi_inspected_fusions",
       "class": "file",
@@ -172,6 +137,14 @@
         "hours": 12
       }
     },
+    "assetDepends": [
+      {
+        "name": "htslib",
+        "project": "project-Fkb6Gkj433GVVvj73J7x8KbV",
+        "folder": "/app_assets/htslib/htslib_v1.15.0",
+        "version": "1.15.0"
+      }
+    ],
     "interpreter": "bash",
     "file": "src/code.sh",
     "release": "20.04",
