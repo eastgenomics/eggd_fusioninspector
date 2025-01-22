@@ -320,7 +320,7 @@ main() {
        cat $(find . -type f -name "cytoBand.txt") > combined_files/cytoBand.txt
        cat $(find . -type f -name "*.bed") > combined_files/$prefix.fa
        cat $(find . -type f -name "*.gmap_trinity_GG.fusions.gff3.bed.sorted.bed") > combined_files/$prefix.gmap_trinity_GG.fusions.gff3.bed.sorted.bed
-       find . -type f -name "*.FusionInspector.fusions.tsv" -print0 | xargs -0 awk 'NR==1 {header=$_} FNR==1 && NR!=1 { $_ ~ $header getline; } {print}' >> combined_files/$prefix.FusionInspector.fusions.tsv
+       # find . -type f -name "*.FusionInspector.fusions.tsv" -print0 | xargs -0 awk 'NR==1 {header=$_} FNR==1 && NR!=1 { $_ ~ $header getline; } {print}' >> combined_files/$prefix.FusionInspector.fusions.tsv
        find . -type f -name "*.FusionInspector.fusions.abridged.tsv.coding_effect" -print0 | xargs -0 awk 'NR==1 {header=$_} FNR==1 && NR!=1 { $_ ~ $header getline; } {print}' >> combined_files/$prefix.FusionInspector.fusions.abridged.tsv.coding_effect
        find . -type f -name "*.FusionInspector.fusions.abridged.tsv" -print0 | xargs -0 awk 'NR==1 {header=$_} FNR==1 && NR!=1 { $_ ~ $header getline; } {print}' >> combined_files/$prefix.FusionInspector.fusions.abridged.tsv
 
@@ -334,7 +334,7 @@ main() {
        cat $(find . -type f -name "*.consolidated.bam.frag_coords") > combined_files/$prefix.consolidated.bam.frag_coords
        cut -f 1 combined_files/$prefix.consolidated.bam.frag_coords | sort | uniq > combined_files/${prefix}_fusion_contigs_inspected.txt
        # combine all the fusions we wanted to inspect
-       awk 'NR==1 {header=$_} FNR==1 && NR!=1 { $_ ~ $header getline; } {print}' home/dnanexus/in/known_fusions/*/* > combined_files/fusion_rescue_list.txt
+       awk 'NR==1 {header=$_} FNR==1 && NR!=1 { $_ ~ $header getline; } {print}' in/known_fusions/*/* > combined_files/fusion_rescue_list.txt
        # find fusions that were missed
        comm -13 combined_files/${prefix}_fusion_contigs_inspected.txt combined_files/fusion_rescue_list.txt > combined_files/${prefix}_missed_fusion_contigs.txt
 
@@ -348,13 +348,13 @@ main() {
        xargs -I{} mv /home/dnanexus/combined_files/{} /home/dnanexus/out/fi_inspected_fusions/{}
 
        find /home/dnanexus/combined_files -type f -name ${prefix}_missed_fusion_contigs.txt -printf "%f\n" | \
-       xargs -I{} mv /home/dnanexus/combined_files{} /home/dnanexus/out/fi_missed_fusions/{}
+       xargs -I{} mv /home/dnanexus/combined_files/{} /home/dnanexus/out/fi_missed_fusions/{}
 
        find /home/dnanexus/combined_files -type f -name "*.FusionInspector.fusions.abridged.tsv" -printf "%f\n" | \
        xargs -I{} mv /home/dnanexus/combined_files/{} /home/dnanexus/out/fi_abridged/{}
 
-       find /home/dnanexus/combined_files -type f -name "*.FusionInspector.fusions.tsv" -printf "%f\n" | \
-       xargs -I{} mv /home/dnanexus/combined_files/{} /home/dnanexus/out/fi_full/{}
+       #find /home/dnanexus/combined_files -type f -name "*.FusionInspector.fusions.tsv" -printf "%f\n" | \
+       #xargs -I{} mv /home/dnanexus/combined_files/{} /home/dnanexus/out/fi_full/{}
 
        find /home/dnanexus/combined_files -type f -name "*.FusionInspector.fusions.abridged.tsv.coding_effect" -printf "%f\n" | \
        xargs -I{} mv /home/dnanexus/combined_files/{} /home/dnanexus/out/fi_coding/{}

@@ -89,13 +89,6 @@
   ],
   "outputSpec": [
     {
-      "name": "fi_full",
-      "label": "fi_full",
-      "class": "file",
-      "optional": false,
-      "help": "FusionInspector full output file"
-    },
-    {
       "name": "fi_abridged",
       "label": "fi_abridged",
       "class": "file",
