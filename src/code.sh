@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# Test that the start of the read files (without lanes), begin with the expected 'prefix' taken from the 
-#STAR-Fusion predictions
 _compare_fastq_name_to_prefix() {
+       # Test that the start of the read files (without lanes), begin with the expected 'prefix' taken from the 
+       #STAR-Fusion predictions
        # Takes an array of FASTQ names with reads and file-endings already cut out.
        # Identify and cut out the sample name. Compare rest of name to StarFusion file prefix. Exit if mismatch.
        local fastq_array=("$@")
@@ -16,11 +16,15 @@ _compare_fastq_name_to_prefix() {
        done
 }
 
-# Check that each R1 has a matching R2
-# Remove "R1" and "R2" and the file suffix from all file names
+
 _trim_fastq_endings() {
-       # Trims the endings off R1 or R2 file names in an array, and returns as an array.
-       # Identify and cut off suffixes. Export suffix for later use.
+       : '''
+       Check that each R1 has a matching R2.
+       Remove "R1" and "R2" and the file suffix from all file names
+       Trims the endings off R1 or R2 file names in an array, and returns as an array.
+       Identify and cut off suffixes. Export suffix for later use.
+       '''
+
        local fastq_array=("$@")
        local read_to_cut=$1
        if [[ "${fastq_array[1]}" == *".fastq.gz" ]]; then
@@ -40,14 +44,6 @@ _trim_fastq_endings() {
        echo ${fastq_array[@]}
 }
 
-_download_all_inputs() {
-       : '''
-       Download all inputs, untar plug-n-play resources, and get its path
-       '''
-       dx-download-all-inputs
-       # tar -xf /home/dnanexus/in/genome_lib/*.tar.gz -C /home/dnanexus/
-
-}
 
 _sense_check_fastq_arrays() {
        : '''
@@ -92,6 +88,14 @@ _make_output_folder() {
 
 
 _scatter() {
+       : '''
+       Run FusionInspector per fusion list
+
+       This function will be launched as a sub job within the scope of
+       the main FusionInspector job, it sets up the job environment, runs the
+       FusionInspector command and uploads output to the parent job container to
+       then continue create the combined files and html report.
+       '''
        set -exo pipefail
 
        # set frequency of instance usage in logs to 30 seconds
@@ -119,12 +123,9 @@ _scatter() {
 
        set +x
 
-       # download files
-
        # set up the FusionInspector command
        wd="$(pwd)"
        out_filename=${samplename}_${fusions_name%.*}
-
 
        duration=$SECONDS
        fusion_ins="docker run -v ${wd}:/data --rm \
@@ -190,7 +191,7 @@ _sub_job_upload_outputs() {
     Util function for _sub_job().
 
     Uploads required output back to container to be downloaded back to parent job for post processing.
-    Since this is >1000 files for each sub job we will create a single tar to upload to reduce the
+    Since this is >10 files for each sub job we will create a single tar to upload to reduce the
     amount of API queries and avoid rate limits, this will then be downloaded and unpacked in the
     parent job
     '''
@@ -214,6 +215,10 @@ _sub_job_upload_outputs() {
 }
 
 _create_fusion_inspector_report() {
+       : '''
+       The files within combined_files directory contains the required files to generate the json which is them used to 
+       create the html report.
+       '''
 
        # create json file needed for html creation. Uses all the files in the combined_files directory
        docker run -v /home/dnanexus:/data --rm $DOCKER_IMAGE_ID  /usr/local/bin/util/create_fusion_inspector_igvjs.py \
@@ -235,7 +240,7 @@ main() {
        # fail on any error
        set -exo pipefail
 
-       _download_all_inputs
+       dx-download-all-inputs
        lib_dir=$(find . -type d -name "*CTAT_lib*")
 
        # samtools in htslib doesn't work as its missing a library, so
@@ -258,10 +263,9 @@ main() {
        # running tests to sense-check R1/R2 arrays and file prefixes"
        # _sense_check_fastq_arrays
 
-       mark-section "Running FusionInspector"
-       # start up job for every fusionlist in scatter mode to run analysis
+       mark-section "Setting subjobs to run FusionInspector"
 
-       # variables to input itnto the app
+       # variables to input into the app
        prefix=$(echo "$sr_predictions_name" | cut -d '.' -f 1)
        known_fusion_file=$known_fusions_name
        docker_file=${fi_docker_name##*/}
@@ -297,6 +301,8 @@ main() {
        echo "All subjobs completed in $(($duration / 60))m$(($duration % 60))s"#
        IO_PROCESSES=$(nproc --all)
 
+       mark-section "Downloading files from subjobs to the parent job"
+
        for fusion in "${fusion_lists[@]}"; do
 	       echo $fusion
 	       echo ${fusion%.*}
@@ -307,8 +313,8 @@ main() {
               echo "$sub_job_tars" | xargs -P $IO_PROCESSES -n1 -I{} sh -c "dx cat $DX_WORKSPACE_ID:{} | tar xf - -C inputs_${fusion%.*}"
        done
 
-       ### merge files to generate the html file
 
+       mark-section "Generating the html report containing all the fusions detected"
        mkdir combined_files
 
        cat $(find . -type f -name "cytoBand.txt") > combined_files/cytoBand.txt
