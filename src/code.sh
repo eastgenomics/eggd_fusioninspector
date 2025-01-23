@@ -83,18 +83,6 @@ _sense_check_fastq_arrays() {
 
 }
 
-
-_make_output_folder() {
-
-       mkdir -p "/home/dnanexus/out/fi_abridged"
-       mkdir "/home/dnanexus/out/fi_full"
-       mkdir "/home/dnanexus/out/fi_coding"
-       mkdir "/home/dnanexus/out/fi_html"
-       mkdir "/home/dnanexus/out/fi_inspected_fusions"
-       mkdir "/home/dnanexus/out/fi_missed_fusions"
-}
-
-
 _scatter() {
        : '''
        Run FusionInspector per fusion list
@@ -250,6 +238,13 @@ main() {
 
        dx-download-all-inputs
        lib_dir=$(find . -type d -name "*CTAT_lib*")
+
+       mkdir -p /home/dnanexus/out/fi_abridged \
+              /home/dnanexus/out/fi_full \
+              /home/dnanexus/out/fi_coding \
+              /home/dnanexus/out/fi_html \
+              /home/dnanexus/out/fi_inspected_fusions \
+              /home/dnanexus/out/fi_missed_fusions
 
        # samtools in htslib doesn't work as its missing a library, so
        # will install the missing libraries from the downloaded deb files
