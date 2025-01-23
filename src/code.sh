@@ -50,10 +50,10 @@ _sense_check_fastq_arrays() {
        Running tests to sense-check R1/R2 arrays and file prefixes
        '''
        # Check that there are the same number of R1s as R2s
-       readarray -t R1 < <(find . -maxdepth 1 -name '*_R1_*' -printf '%f\n')
-       readarray -t R2 < <(find . -maxdepth 1 -name '*_R2_*' -printf '%f\n')
-       R2=($(ls *_R2_*))
-       cd /home/dnanexus
+       readarray -t R1 < <(find /home/dnanexus/in/ -maxdepth 3 -name '*_R1_*' -printf '%f\n')
+       echo "${R1[@]}"
+       readarray -t R2 < <(find /home/dnanexus/in/ -maxdepth 3 -name '*_R2_*' -printf '%f\n')
+       echo "${R2[@]}"
        if [[ ${#R1[@]} -ne ${#R2[@]} ]]; then 
               echo "The number of R1 and R2 files for this sample are not equal - exiting"
               exit 1
@@ -67,14 +67,18 @@ _sense_check_fastq_arrays() {
               if [[ ! ${R2_test} =~ ${R1_test[$i]} ]]; then
                      echo "Each R1 FASTQ does not appear to have a matching R2 FASTQ"
                      echo "${R2_test} ${R1_test[$i]}"
-                     exit 1 
+                     exit 1
               fi
        done
+       echo "Chekc prefix name:"
+       echo $prefix
 
        _compare_fastq_name_to_prefix "$prefix" ${R1_test}
        _compare_fastq_name_to_prefix "$prefix" ${R2_test}
 
 }
+
+
 _make_output_folder() {
 
        mkdir -p "/home/dnanexus/out/fi_abridged"
@@ -258,9 +262,10 @@ main() {
 
        # remove header line from STAR-Fusion predicted fusions for Docker
        sr_predictions_name=$(find /home/dnanexus/in/sr_predictions -type f -printf "%f\n")
+       prefix=$(echo "$sr_predictions_name" | cut -d '.' -f 1)
 
        # running tests to sense-check R1/R2 arrays and file prefixes"
-       # _sense_check_fastq_arrays
+       _sense_check_fastq_arrays
 
        mark-section "Setting subjobs to run FusionInspector"
 
