@@ -60,9 +60,7 @@ _sense_check_fastq_arrays() {
        '''
        # Check that there are the same number of R1s as R2s
        readarray -t R1 < <(find /home/dnanexus/in/ -maxdepth 3 -name '*_R1_*' -printf '%f\n')
-       echo "${R1[@]}"
        readarray -t R2 < <(find /home/dnanexus/in/ -maxdepth 3 -name '*_R2_*' -printf '%f\n')
-       echo "${R2[@]}"
        if [[ ${#R1[@]} -ne ${#R2[@]} ]]; then 
               echo "The number of R1 and R2 files for this sample are not equal - exiting"
               exit 1
@@ -79,8 +77,6 @@ _sense_check_fastq_arrays() {
                      exit 1
               fi
        done
-       echo "Chekc prefix name:"
-       echo $prefix
 
        _compare_fastq_name_to_prefix "$prefix" ${R1_test}
        _compare_fastq_name_to_prefix "$prefix" ${R2_test}
@@ -350,8 +346,6 @@ main() {
        awk 'NR==1 {header=$_} FNR==1 && NR!=1 { $_ ~ $header getline; } {print}' in/known_fusions/*/* > combined_files/fusion_rescue_list.txt
        # find fusions that were missed
        comm -13 combined_files/${prefix}_fusion_contigs_inspected.txt combined_files/fusion_rescue_list.txt > combined_files/${prefix}_missed_fusion_contigs.txt
-
-       ls combined_files/
 
        mark-section "Move results files to their output directories"
        # make temporary and final output directories
