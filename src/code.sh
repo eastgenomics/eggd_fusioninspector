@@ -1,5 +1,14 @@
 #!/bin/bash
 
+# prefixes all lines of commands written to stdout with datetime
+PS4='\000[$(date)]\011'
+export TZ=Europe/London
+set -exo pipefail
+
+# set frequency of instance usage in logs to 30 seconds
+kill $(ps aux | grep pcp-dstat | head -n1 | awk '{print $2}')
+/usr/bin/dx-dstat 30
+
 _compare_fastq_name_to_prefix() {
        # Test that the start of the read files (without lanes), begin with the expected 'prefix' taken from the 
        #STAR-Fusion predictions
