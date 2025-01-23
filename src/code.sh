@@ -361,7 +361,7 @@ main() {
        xargs -I{} mv /home/dnanexus/combined_files/{} /home/dnanexus/out/fi_html/{}
 
        mark-section "Upload the final outputs"
-       dx-upload-all-outputs --parallel
+       time dx-upload-all-outputs --parallel
        mark-success
 
 }
