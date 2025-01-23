@@ -105,7 +105,7 @@ _scatter() {
        INSTANCE=$(dx describe --json $DX_JOB_ID | jq -r '.instanceType')  # Extract instance type
        NUMBER_THREADS=${INSTANCE##*_x}
 
-       dx-download-all-inputs
+       time dx-download-all-inputs
        tar -xf /home/dnanexus/in/genome_lib/*.tar.gz -C /home/dnanexus/
        lib_dir=$(find . -type d -name "*CTAT_lib*")
 
@@ -232,7 +232,7 @@ main() {
        # fail on any error
        set -exo pipefail
 
-       dx-download-all-inputs
+       time dx-download-all-inputs
        lib_dir=$(find . -type d -name "*CTAT_lib*")
 
        mkdir -p /home/dnanexus/out/fi_abridged \
