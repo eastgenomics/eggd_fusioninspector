@@ -50,9 +50,8 @@ _sense_check_fastq_arrays() {
        Running tests to sense-check R1/R2 arrays and file prefixes
        '''
        # Check that there are the same number of R1s as R2s
-       cd /home/dnanexus/r1_fastqs
-       R1=($(ls *_R1_*))
-       cd /home/dnanexus/r2_fastqs
+       readarray -t R1 < <(find . -maxdepth 1 -name '*_R1_*' -printf '%f\n')
+       readarray -t R2 < <(find . -maxdepth 1 -name '*_R2_*' -printf '%f\n')
        R2=($(ls *_R2_*))
        cd /home/dnanexus
        if [[ ${#R1[@]} -ne ${#R2[@]} ]]; then 
@@ -60,12 +59,12 @@ _sense_check_fastq_arrays() {
               exit 1
        fi
 
-       R1_test=$(_trim_fastq_endings "_R1_" ${R1[@]})
-       R2_test=$(_trim_fastq_endings "_R2_" ${R2[@]})
+       R1_test=$(_trim_fastq_endings "_R1_" "${R1[@]}")
+       R2_test=$(_trim_fastq_endings "_R2_" "${R2[@]}")
 
        # Test that when "R1" and "R2" are removed the two arrays have identical file names
        for i in "${!R1_test[@]}"; do
-              if [[ ! "${R2_test}" =~ "${R1_test[$i]}" ]]; then 
+              if [[ ! ${R2_test} =~ ${R1_test[$i]} ]]; then
                      echo "Each R1 FASTQ does not appear to have a matching R2 FASTQ"
                      echo "${R2_test} ${R1_test[$i]}"
                      exit 1 
