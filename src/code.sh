@@ -94,12 +94,10 @@ _scatter() {
        '''
        set -exo pipefail
 
-       # set frequency of instance usage in logs to 30 seconds
-       kill $(ps aux | grep pcp-dstat | head -n1 | awk '{print $2}')
-       /usr/bin/dx-dstat 30
-
-       # control how many operations to open in parallel for download / upload
-       THREADS=$(nproc --all)
+       # prefixes all lines of commands written to stdout with datetime
+       PS4='\000[$(date)]\011'
+       export TZ=Europe/London
+       set -exo pipefail
 
        # create valid empty JSON file for job output
        echo "{}" > job_output.json
@@ -116,8 +114,6 @@ _scatter() {
        DOCKER_IMAGE_ID=$(docker images --format="{{.Repository}} {{.ID}}" | grep "^trinityctat/fusioninspector" | cut -d' ' -f2)
 
        SECONDS=0
-
-       set +x
 
        # set up the FusionInspector command
        wd="$(pwd)"
