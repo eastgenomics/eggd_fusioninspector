@@ -343,15 +343,10 @@ main() {
        mark-section "Generating the html report containing all the fusions detected"
        mkdir combined_files
 
-       # cat $(find subjob_output -type f -name "cytoBand.txt") > combined_files/cytoBand.txt
        find subjob_output -name "*.cytoBand.txt" -exec cat '{}' + -quit >> combined_files/cytoBand.txt
        find subjob_output -name "*.fa" -exec cat '{}' + -quit >> combined_files/$prefix.fa
        find subjob_output -name "*.gmap_trinity_GG.fusions.gff3.bed.sorted.bed" -exec cat '{}' + -quit >> combined_files/$prefix.gmap_trinity_GG.fusions.gff3.bed.sorted.bed
-       # cat $(find subjob_output -type f -name "*.fa") > combined_files/$prefix.fa
-       # cat $(find subjob_output -type f -name "*.gmap_trinity_GG.fusions.gff3.bed.sorted.bed") > combined_files/$prefix.gmap_trinity_GG.fusions.gff3.bed.sorted.bed
        find subjob_output -type f -name "*.FusionInspector.fusions.tsv" -print0 | xargs -0 awk 'NR==1 {header=$_} FNR==1 && NR!=1 { $_ ~ $header getline; } {print}' >> combined_files/$prefix.FusionInspector.fusions.tsv
-       # find subjob_output -name "*.FusionInspector.fusions.tsv" -exec cat '{}' + -quit | head -n1 >> $prefix.FusionInspector.fusions.tsv
-       # find subjob_output -name "*.FusionInspector.fusions.tsv" -exec sh -c 'cat {} | tail -n+2' \; >> $prefix.FusionInspector.fusions.tsv
        find subjob_output -type f -name "*.FusionInspector.fusions.abridged.tsv.coding_effect" -print0 | xargs -0 awk 'NR==1 {header=$_} FNR==1 && NR!=1 { $_ ~ $header getline; } {print}' >> combined_files/$prefix.FusionInspector.fusions.abridged.tsv.coding_effect
        find subjob_output -type f -name "*.FusionInspector.fusions.abridged.tsv" -print0 | xargs -0 awk 'NR==1 {header=$_} FNR==1 && NR!=1 { $_ ~ $header getline; } {print}' >> combined_files/$prefix.FusionInspector.fusions.abridged.tsv
 
@@ -373,7 +368,6 @@ main() {
        comm -13 combined_files/${prefix}_fusion_contigs_inspected.txt combined_files/fusion_rescue_list.txt > combined_files/${prefix}_missed_fusion_contigs.txt
 
        mark-section "Move results files to their output directories"
-       # make temporary and final output directories
 
        find /home/dnanexus/combined_files -type f -name ${prefix}_fusion_contigs_inspected.txt -printf "%f\n" | \
        xargs -I{} mv /home/dnanexus/combined_files/{} /home/dnanexus/out/fi_inspected_fusions/{}
@@ -384,8 +378,8 @@ main() {
        find /home/dnanexus/combined_files -type f -name "*.FusionInspector.fusions.abridged.tsv" -printf "%f\n" | \
        xargs -I{} mv /home/dnanexus/combined_files/{} /home/dnanexus/out/fi_abridged/{}
 
-       #find /home/dnanexus/combined_files -type f -name "*.FusionInspector.fusions.tsv" -printf "%f\n" | \
-       #xargs -I{} mv /home/dnanexus/combined_files/{} /home/dnanexus/out/fi_full/{}
+       find /home/dnanexus/combined_files -type f -name "*.FusionInspector.fusions.tsv" -printf "%f\n" | \
+       xargs -I{} mv /home/dnanexus/combined_files/{} /home/dnanexus/out/fi_full/{}
 
        find /home/dnanexus/combined_files -type f -name "*.FusionInspector.fusions.abridged.tsv.coding_effect" -printf "%f\n" | \
        xargs -I{} mv /home/dnanexus/combined_files/{} /home/dnanexus/out/fi_coding/{}
