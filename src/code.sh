@@ -78,8 +78,8 @@ _sense_check_fastq_arrays() {
               fi
        done
 
-       _compare_fastq_name_to_prefix "$prefix" ${R1_test}
-       _compare_fastq_name_to_prefix "$prefix" ${R2_test}
+       _compare_fastq_name_to_prefix "$prefix" ${R1_test[@]}
+       _compare_fastq_name_to_prefix "$prefix" ${R2_test[@]}
 
 }
 
@@ -102,8 +102,8 @@ _scatter() {
        # create valid empty JSON file for job output
        echo "{}" > job_output.json
 
-       INSTANCE=$(dx describe --json $DX_JOB_ID | jq -r '.instanceType')  # Extract instance type
-       NUMBER_THREADS=${INSTANCE##*_x}
+       # Extract instance type
+       NUMBER_THREADS=$(nproc --all)
 
        time dx-download-all-inputs
        tar -xf /home/dnanexus/in/genome_lib/*.tar.gz -C /home/dnanexus/
@@ -126,8 +126,8 @@ _scatter() {
               --fusions /data/in/fusions/${fusions_name} \
               -O /data/temp_out \
               --CPU ${NUMBER_THREADS} \
-              --left_fq /data/in/left_fq/${left_fq_name} \
-              --right_fq /data/in/right_fq/${right_fq_name} \
+              --left_fq /data/in/left_fq_1/${left_fq_1_name},/data/in/left_fq_2/${left_fq_2_name}  \
+              --right_fq /data/in/right_fq_1/${right_fq_1_name},/data/in/right_fq_2/${right_fq_2_name} \
               --out_prefix ${out_filename} \
               --genome_lib_dir /data/${lib_dir}/ctat_genome_lib_build_dir \
               --examine_coding_effect \
@@ -212,19 +212,44 @@ _create_fusion_inspector_report() {
        create the html report.
        '''
 
+        # Validate input files exist
+       local required_files=(
+              "combined_files/cytoBand.txt"
+              "combined_files/$prefix.fa"
+              "combined_files/$prefix.gmap_trinity_GG.fusions.gff3.bed.sorted.bed"
+              "combined_files/$prefix.FusionInspector.fusions.tsv"
+              "combined_files/$prefix.FusionInspector.fusions.abridged.tsv.coding_effect"
+              "combined_files/$prefix.FusionInspector.fusions.abridged.tsv"
+              "combined_files/$prefix.junction_reads.bam"
+              "combined_files/$prefix.spanning_reads.bam"
+              "combined_files/$prefix.star.sortedByCoord.out.bam"
+       )
+       for file in "${required_files[@]}"; do
+              if [[ ! -e "$file" ]]; then
+                     echo "Error: Required file/directory not found: $file"
+                     exit 1
+              fi
+       done
+
        # create json file needed for html creation. Uses all the files in the combined_files directory
-       docker run -v /home/dnanexus:/data --rm $DOCKER_IMAGE_ID  /usr/local/bin/util/create_fusion_inspector_igvjs.py \
+       if ! docker run -v /home/dnanexus:/data --rm $DOCKER_IMAGE_ID  /usr/local/bin/util/create_fusion_inspector_igvjs.py \
        --fusion_inspector_directory /data/combined_files \
        --json_outfile /data/combined_files/$prefix.fusion_inspector_web.json \
        --file_prefix $prefix \
-       --include_Trinity
+       --include_Trinity; then
+              echo "Error: Failed to generate JSON file"
+              exit 1
+       fi
 
        # create html report
-       docker run -v /home/dnanexus:/data --rm $DOCKER_IMAGE_ID  /usr/local/bin/fusion-reports/create_fusion_report.py \
+       if ! docker run -v /home/dnanexus:/data --rm $DOCKER_IMAGE_ID  /usr/local/bin/fusion-reports/create_fusion_report.py \
        --html_template /usr/local/bin/util/fusion_report_html_template/igvjs_fusion.html \
        --fusions_json /data/combined_files/$prefix.fusion_inspector_web.json \
        --input_file_prefix $prefix \
-       --html_output /data/combined_files/$prefix.fusion_inspector_web.html
+       --html_output /data/combined_files/$prefix.fusion_inspector_web.html; then
+              echo "Error: Failed to generate html file"
+              exit 1
+       fi
 }
 
 
@@ -252,10 +277,6 @@ main() {
        docker load -i /home/dnanexus/in/fi_docker/*.tar.gz
        DOCKER_IMAGE_ID=$(docker images --format="{{.Repository}} {{.ID}}" | grep "^trinityctat/fusioninspector" | cut -d' ' -f2)
 
-       # obtain instance information to set CPU flexibly
-       INSTANCE=$(dx describe --json $DX_JOB_ID | jq -r '.instanceType')  # Extract instance type
-       NUMBER_THREADS=${INSTANCE##*_x}
-
        # remove header line from STAR-Fusion predicted fusions for Docker
        sr_predictions_name=$(find /home/dnanexus/in/sr_predictions -type f -printf "%f\n")
        prefix=$(echo "$sr_predictions_name" | cut -d '.' -f 1)
@@ -267,7 +288,8 @@ main() {
 
        # variables to input into the app
        prefix=$(echo "$sr_predictions_name" | cut -d '.' -f 1)
-       known_fusion_file=$known_fusions_name
+       known_fusion_file="${known_fusions_name[@]}"
+       echo $known_fusion_file
        docker_file=${fi_docker_name##*/}
 
        # make array of fusions list from sr_prediction & known_fusions
@@ -282,8 +304,10 @@ main() {
                      -isamplename="$prefix" \
                      -ifusions="${fusion}" \
                      -igenome_lib="$genome_lib" \
-                     -ileft_fq="$r1_fastqs" \
-                     -iright_fq="$r2_fastqs" \
+                     -ileft_fq_1="${r1_fastqs[0]}" \
+                     -ileft_fq_2="${r1_fastqs[1]}" \
+                     -iright_fq_1="${r2_fastqs[0]}" \
+                     -iright_fq_2="${r2_fastqs[1]}" \
                      -iopt_parameters="$opt_parameters" \
                      -iinclude_trinity="$include_trinity" \
                      -idocker="$docker_file" \
@@ -302,45 +326,54 @@ main() {
        IO_PROCESSES=$(nproc --all)
 
        mark-section "Downloading files from subjobs to the parent job"
+       mkdir subjob_output
 
        for fusion in "${fusion_lists[@]}"; do
 	       echo $fusion
 	       echo ${fusion%.*}
 	       tar_name=$prefix_$fusion.tar
-              mkdir inputs_${fusion%.*}
+              mkdir subjob_output/inputs_${fusion%.*}
               # download the subjob files currently living in the container
               sub_job_tars=$(dx find data --json --name $tar_name --path "$DX_WORKSPACE_ID:/FI_outputs" | jq -r '.[].id')
-              echo "$sub_job_tars" | xargs -P $IO_PROCESSES -n1 -I{} sh -c "dx cat $DX_WORKSPACE_ID:{} | tar xf - -C inputs_${fusion%.*}"
+              # try to put all subjob_output folder 
+              echo "$sub_job_tars" | xargs -P $IO_PROCESSES -n1 -I{} sh -c "dx cat $DX_WORKSPACE_ID:{} | tar xf - -C subjob_output/inputs_${fusion%.*}"
        done
 
 
        mark-section "Generating the html report containing all the fusions detected"
        mkdir combined_files
 
-       cat $(find . -type f -name "cytoBand.txt") > combined_files/cytoBand.txt
-       cat $(find . -type f -name "*.bed") > combined_files/$prefix.fa
-       cat $(find . -type f -name "*.gmap_trinity_GG.fusions.gff3.bed.sorted.bed") > combined_files/$prefix.gmap_trinity_GG.fusions.gff3.bed.sorted.bed
-       # find . -type f -name "*.FusionInspector.fusions.tsv" -print0 | xargs -0 awk 'NR==1 {header=$_} FNR==1 && NR!=1 { $_ ~ $header getline; } {print}' >> combined_files/$prefix.FusionInspector.fusions.tsv
-       find . -type f -name "*.FusionInspector.fusions.abridged.tsv.coding_effect" -print0 | xargs -0 awk 'NR==1 {header=$_} FNR==1 && NR!=1 { $_ ~ $header getline; } {print}' >> combined_files/$prefix.FusionInspector.fusions.abridged.tsv.coding_effect
-       find . -type f -name "*.FusionInspector.fusions.abridged.tsv" -print0 | xargs -0 awk 'NR==1 {header=$_} FNR==1 && NR!=1 { $_ ~ $header getline; } {print}' >> combined_files/$prefix.FusionInspector.fusions.abridged.tsv
+       # cat $(find subjob_output -type f -name "cytoBand.txt") > combined_files/cytoBand.txt
+       find subjob_output -name "*.cytoBand.txt" -exec cat '{}' + -quit >> combined_files/cytoBand.txt
+       find subjob_output -name "*.fa" -exec cat '{}' + -quit >> combined_files/$prefix.fa
+       find subjob_output -name "*.gmap_trinity_GG.fusions.gff3.bed.sorted.bed" -exec cat '{}' + -quit >> combined_files/$prefix.gmap_trinity_GG.fusions.gff3.bed.sorted.bed
+       # cat $(find subjob_output -type f -name "*.fa") > combined_files/$prefix.fa
+       # cat $(find subjob_output -type f -name "*.gmap_trinity_GG.fusions.gff3.bed.sorted.bed") > combined_files/$prefix.gmap_trinity_GG.fusions.gff3.bed.sorted.bed
+       find subjob_output -type f -name "*.FusionInspector.fusions.tsv" -print0 | xargs -0 awk 'NR==1 {header=$_} FNR==1 && NR!=1 { $_ ~ $header getline; } {print}' >> combined_files/$prefix.FusionInspector.fusions.tsv
+       # find subjob_output -name "*.FusionInspector.fusions.tsv" -exec cat '{}' + -quit | head -n1 >> $prefix.FusionInspector.fusions.tsv
+       # find subjob_output -name "*.FusionInspector.fusions.tsv" -exec sh -c 'cat {} | tail -n+2' \; >> $prefix.FusionInspector.fusions.tsv
+       find subjob_output -type f -name "*.FusionInspector.fusions.abridged.tsv.coding_effect" -print0 | xargs -0 awk 'NR==1 {header=$_} FNR==1 && NR!=1 { $_ ~ $header getline; } {print}' >> combined_files/$prefix.FusionInspector.fusions.abridged.tsv.coding_effect
+       find subjob_output -type f -name "*.FusionInspector.fusions.abridged.tsv" -print0 | xargs -0 awk 'NR==1 {header=$_} FNR==1 && NR!=1 { $_ ~ $header getline; } {print}' >> combined_files/$prefix.FusionInspector.fusions.abridged.tsv
 
-       find . -type f -name combined_files/$prefix.junction_reads.bam -prune -o -name '*.junction_reads.bam' -exec samtools merge combined_files/$prefix.junction_reads.bam {} +
-       find . -type f -name combined_files/$prefix.spanning_reads.bam -prune -o -name '*.spanning_reads.bam' -exec samtools merge combined_files/$prefix.spanning_reads.bam {} +
-       find . -type f -name combined_files/$prefix.star.sortedByCoord.out.bam -prune -o -name '*.star.sortedByCoord.out.bam' -exec samtools merge combined_files/$prefix.star.sortedByCoord.out.bam {} +
+       find subjob_output -type f -name combined_files/$prefix.junction_reads.bam -prune -o -name '*.junction_reads.bam' -exec samtools merge combined_files/$prefix.junction_reads.bam {} +
+       find subjob_output -type f -name combined_files/$prefix.spanning_reads.bam -prune -o -name '*.spanning_reads.bam' -exec samtools merge combined_files/$prefix.spanning_reads.bam {} +
+       find subjob_output -type f -name combined_files/$prefix.star.sortedByCoord.out.bam -prune -o -name '*.star.sortedByCoord.out.bam' -exec samtools merge combined_files/$prefix.star.sortedByCoord.out.bam {} +
+
+       ls -l combined_files
 
        _create_fusion_inspector_report
 
        mark-section "Check what fusion contigs were selected from the BAM file"
-       cat $(find . -type f -name "*.consolidated.bam.frag_coords") > combined_files/$prefix.consolidated.bam.frag_coords
+       # cat $(find subjob_output -type f -name "*.consolidated.bam.frag_coords") > 
+       find subjob_output -name "*.consolidated.bam.frag_coords" -exec cat '{}' + -quit >> combined_files/$prefix.consolidated.bam.frag_coords
        cut -f 1 combined_files/$prefix.consolidated.bam.frag_coords | sort | uniq > combined_files/${prefix}_fusion_contigs_inspected.txt
        # combine all the fusions we wanted to inspect
-       awk 'NR==1 {header=$_} FNR==1 && NR!=1 { $_ ~ $header getline; } {print}' in/known_fusions/*/* > combined_files/fusion_rescue_list.txt
+       awk 'NR==1 {header=$_} FNR==1 && NR!=1 { $_ ~ $header getline; } {print}' in/known_fusions/*/* | sort > combined_files/fusion_rescue_list.txt
        # find fusions that were missed
        comm -13 combined_files/${prefix}_fusion_contigs_inspected.txt combined_files/fusion_rescue_list.txt > combined_files/${prefix}_missed_fusion_contigs.txt
 
        mark-section "Move results files to their output directories"
        # make temporary and final output directories
-       _make_output_folder
 
        find /home/dnanexus/combined_files -type f -name ${prefix}_fusion_contigs_inspected.txt -printf "%f\n" | \
        xargs -I{} mv /home/dnanexus/combined_files/{} /home/dnanexus/out/fi_inspected_fusions/{}

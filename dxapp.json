@@ -140,7 +140,7 @@
     ],
     "interpreter": "bash",
     "file": "src/code.sh",
-    "release": "24.04",
+    "release": "20.04",
     "distribution": "Ubuntu",
     "version": "0"
   },
