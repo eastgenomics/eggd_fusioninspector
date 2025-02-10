@@ -232,14 +232,22 @@ _create_fusion_inspector_report() {
        done
 
        # create json file needed for html creation. Uses all the files in the combined_files directory
-       if ! docker run -v /home/dnanexus:/data --rm $DOCKER_IMAGE_ID  /usr/local/bin/util/create_fusion_inspector_igvjs.py \
+       fusion_json="docker run -v /home/dnanexus:/data --rm $DOCKER_IMAGE_ID  \
+       /usr/local/bin/util/create_fusion_inspector_igvjs.py \
        --fusion_inspector_directory /data/combined_files \
        --json_outfile /data/combined_files/$prefix.fusion_inspector_web.json \
-       --file_prefix $prefix \
-       --include_Trinity; then
+       --file_prefix $prefix"
+
+       if [ "$include_trinity" = "true" ]; then
+              mark-section "Adding Trinity de novo reconstruction option to FusionInspector command"
+              fusion_json="${fusion_json} --include_Trinity"
+       fi
+
+       if ! eval "${fusion_json}" ; then
               echo "Error: Failed to generate JSON file"
               exit 1
        fi
+
 
        # create html report
        if ! docker run -v /home/dnanexus:/data --rm $DOCKER_IMAGE_ID  /usr/local/bin/fusion-reports/create_fusion_report.py \
@@ -347,12 +355,16 @@ main() {
        find subjob_output -name "*.fa" -exec cat '{}' + -quit >> combined_files/$prefix.fa
        find subjob_output -name "*.gmap_trinity_GG.fusions.gff3.bed.sorted.bed" -exec cat '{}' + -quit >> combined_files/$prefix.gmap_trinity_GG.fusions.gff3.bed.sorted.bed
        find subjob_output -type f -name "*.FusionInspector.fusions.tsv" -print0 | xargs -0 awk 'NR==1 {header=$_} FNR==1 && NR!=1 { $_ ~ $header getline; } {print}' >> combined_files/$prefix.FusionInspector.fusions.tsv
-       find subjob_output -type f -name "*.FusionInspector.fusions.abridged.tsv.coding_effect" -print0 | xargs -0 awk 'NR==1 {header=$_} FNR==1 && NR!=1 { $_ ~ $header getline; } {print}' >> combined_files/$prefix.FusionInspector.fusions.abridged.tsv.coding_effect
        find subjob_output -type f -name "*.FusionInspector.fusions.abridged.tsv" -print0 | xargs -0 awk 'NR==1 {header=$_} FNR==1 && NR!=1 { $_ ~ $header getline; } {print}' >> combined_files/$prefix.FusionInspector.fusions.abridged.tsv
 
        find subjob_output -type f -name combined_files/$prefix.junction_reads.bam -prune -o -name '*.junction_reads.bam' -exec samtools merge combined_files/$prefix.junction_reads.bam {} +
        find subjob_output -type f -name combined_files/$prefix.spanning_reads.bam -prune -o -name '*.spanning_reads.bam' -exec samtools merge combined_files/$prefix.spanning_reads.bam {} +
        find subjob_output -type f -name combined_files/$prefix.star.sortedByCoord.out.bam -prune -o -name '*.star.sortedByCoord.out.bam' -exec samtools merge combined_files/$prefix.star.sortedByCoord.out.bam {} +
+
+       # need to merge all the coding effect files, move to all the coding files to a temporary file
+       mkdir coding_effect_files
+       find subjob_output -type f -name "*.FusionInspector.fusions.abridged.tsv.coding_effect" -print0 | xargs -0 -I {} mv {} ./coding_effect_files
+       python3 merge_fusions_tsv.py -a coding_effect_files/*.coding_effect -o combined_files
 
        ls -l combined_files
 
