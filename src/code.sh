@@ -218,7 +218,7 @@ _create_fusion_inspector_report() {
               "combined_files/$prefix.fa"
               "combined_files/$prefix.gmap_trinity_GG.fusions.gff3.bed.sorted.bed"
               "combined_files/$prefix.FusionInspector.fusions.tsv"
-              "combined_files/$prefix.FusionInspector.fusions.abridged.tsv.coding_effect"
+              "combined_files/$prefix.FusionInspector.fusions.abridged.coding_effect.merged.tsv"
               "combined_files/$prefix.FusionInspector.fusions.abridged.tsv"
               "combined_files/$prefix.junction_reads.bam"
               "combined_files/$prefix.spanning_reads.bam"
@@ -265,7 +265,12 @@ main() {
        # fail on any error
        set -exo pipefail
 
+       # Install packages
+       export PATH=$PATH:/home/dnanexus/.local/bin  # pip installs some packages here, add to path
+       sudo -H python3 -m pip install --no-index --no-deps packages/*
+
        time dx-download-all-inputs
+
        lib_dir=$(find . -type d -name "*CTAT_lib*")
 
        mkdir -p /home/dnanexus/out/fi_abridged \
@@ -387,16 +392,16 @@ main() {
        find /home/dnanexus/combined_files -type f -name ${prefix}_missed_fusion_contigs.txt -printf "%f\n" | \
        xargs -I{} mv /home/dnanexus/combined_files/{} /home/dnanexus/out/fi_missed_fusions/{}
 
-       find /home/dnanexus/combined_files -type f -name "*.FusionInspector.fusions.abridged.tsv" -printf "%f\n" | \
+       find /home/dnanexus/combined_files -type f -name ${prefix}.FusionInspector.fusions.abridged.tsv -printf "%f\n" | \
        xargs -I{} mv /home/dnanexus/combined_files/{} /home/dnanexus/out/fi_abridged/{}
 
-       find /home/dnanexus/combined_files -type f -name "*.FusionInspector.fusions.tsv" -printf "%f\n" | \
+       find /home/dnanexus/combined_files -type f -name ${prefix}.FusionInspector.fusions.tsv -printf "%f\n" | \
        xargs -I{} mv /home/dnanexus/combined_files/{} /home/dnanexus/out/fi_full/{}
 
-       find /home/dnanexus/combined_files -type f -name "*.FusionInspector.fusions.abridged.tsv.coding_effect" -printf "%f\n" | \
+       find /home/dnanexus/combined_files -type f -name ${prefix}.FusionInspector.fusions.abridged.coding_effect.merged.tsv -printf "%f\n" | \
        xargs -I{} mv /home/dnanexus/combined_files/{} /home/dnanexus/out/fi_coding/{}
 
-       find /home/dnanexus/combined_files -type f -name "*.fusion_inspector_web.html" -printf "%f\n" | \
+       find /home/dnanexus/combined_files -type f -name ${prefix}.fusion_inspector_web.html -printf "%f\n" | \
        xargs -I{} mv /home/dnanexus/combined_files/{} /home/dnanexus/out/fi_html/{}
 
        mark-section "Upload the final outputs"

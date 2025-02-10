@@ -67,7 +67,7 @@ def main():
 	merged_files = merge_files(args)
 
 	for basename, merged_df in merged_files.items():
-		output_path = os.path.join(args.output_directory, f"{basename}_FusionInspector.fusions.abridged.merged.tsv")
+		output_path = os.path.join(args.output_directory, f"{basename}.FusionInspector.fusions.abridged.coding_effect.merged.tsv")
 		merged_df.to_csv(output_path, index=False, sep='\t')
 		print(f"Merged file saved to {output_path}")
 
