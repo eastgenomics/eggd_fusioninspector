@@ -78,8 +78,8 @@ _sense_check_fastq_arrays() {
               fi
        done
 
-       _compare_fastq_name_to_prefix "$prefix" ${R1_test[@]}
-       _compare_fastq_name_to_prefix "$prefix" ${R2_test[@]}
+       _compare_fastq_name_to_prefix "$prefix" "${R1_test[@]}"
+       _compare_fastq_name_to_prefix "$prefix" "${R2_test[@]}"
 
 }
 
