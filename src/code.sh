@@ -123,7 +123,7 @@ _scatter() {
        fusion_ins="docker run -v ${wd}:/data --rm \
               ${DOCKER_IMAGE_ID} \
               FusionInspector \
-              --fusions /data/in/fusions/${fusions_name} \
+              --fusions /data/in/fusions/${fusions_name},/data/in/star_fusion/${star_fusion_name}  \
               -O /data/temp_out \
               --CPU ${NUMBER_THREADS} \
               --left_fq /data/in/left_fq_1/${left_fq_1_name},/data/in/left_fq_2/${left_fq_2_name}  \
@@ -308,13 +308,13 @@ main() {
        # make array of fusions list from sr_prediction & known_fusions
        fusion_lists=()
        fusion_lists+=(${known_fusion_file})
-       fusion_lists+=(${sr_predictions_name})
        echo "${fusion_lists[@]}"
 
        for fusion in "${fusion_lists[@]}"; do
               echo $fusion
               dx-jobutil-new-job _scatter \
                      -isamplename="$prefix" \
+                     -istar_fusion="${sr_predictions}" \
                      -ifusions="${fusion}" \
                      -igenome_lib="$genome_lib" \
                      -ileft_fq_1="${r1_fastqs[0]}" \
