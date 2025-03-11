@@ -308,7 +308,6 @@ main() {
        # make array of fusions list from sr_prediction & known_fusions
        fusion_lists=()
        fusion_lists+=(${known_fusion_file})
-       # fusion_lists+=(${sr_predictions_name})
        echo "${fusion_lists[@]}"
 
        for fusion in "${fusion_lists[@]}"; do
