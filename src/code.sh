@@ -356,6 +356,10 @@ main() {
        mark-section "Generating the html report containing all the fusions detected"
        mkdir combined_files
 
+       # to make the fusion inspector report html, we need to merge the
+       # output from each child job which is in its own directory under
+       # subjob_output folder
+
        find subjob_output -name "*.cytoBand.txt" -exec cat '{}' + -quit >> combined_files/cytoBand.txt
        find subjob_output -name "*.fa" -exec cat '{}' + -quit >> combined_files/$prefix.fa
        find subjob_output -name "*.gmap_trinity_GG.fusions.gff3.bed.sorted.bed" -exec cat '{}' + -quit >> combined_files/$prefix.gmap_trinity_GG.fusions.gff3.bed.sorted.bed
