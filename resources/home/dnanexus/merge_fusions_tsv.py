@@ -47,7 +47,10 @@ def merge_files(args):
 
 	for file in args.array:
 		if file.endswith(".coding_effect"):
-			df = pd.read_csv(file, sep='\t')
+			try:
+				df = pd.read_csv(file, sep='\t')
+			except Exception as e:
+				print(f"An unexpected error occurred: {e}")
 			file_basename = os.path.basename(file).split('_')[0]
 			if file_basename in dfs:
 				dfs[file_basename] = pd.concat([dfs[file_basename], df]).drop_duplicates(subset=[
