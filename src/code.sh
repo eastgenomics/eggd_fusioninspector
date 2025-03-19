@@ -375,9 +375,13 @@ main() {
        find subjob_output -type f -name "*.FusionInspector.fusions.abridged.tsv.coding_effect" -print0 | xargs -0 -I {} mv {} ./coding_effect_files
        python3 merge_fusions_tsv.py -a coding_effect_files/*.coding_effect -o combined_files
 
-       ls -l combined_files
-
-       _create_fusion_inspector_report
+       # if there is fusions predicted. Create a html, else do not create a html as it'll be empty and fail
+       number_of_fusions=$(tail -n +2 combined_files/${prefix}.FusionInspector.fusions.abridged.coding_effect.merged.tsv | wc -l)
+       if [ $number_of_fusions >= 1 ]; then
+              _create_fusion_inspector_report
+       else
+              echo "No fusions predicted, so no html report will be outputted"
+       fi
 
        mark-section "Check what fusion contigs were selected from the BAM file"
        # cat $(find subjob_output -type f -name "*.consolidated.bam.frag_coords") > 
@@ -405,8 +409,14 @@ main() {
        find /home/dnanexus/combined_files -type f -name ${prefix}.FusionInspector.fusions.abridged.coding_effect.merged.tsv -printf "%f\n" | \
        xargs -I{} mv /home/dnanexus/combined_files/{} /home/dnanexus/out/fi_coding/{}
 
-       find /home/dnanexus/combined_files -type f -name ${prefix}.fusion_inspector_web.html -printf "%f\n" | \
-       xargs -I{} mv /home/dnanexus/combined_files/{} /home/dnanexus/out/fi_html/{}
+       if [ -f /home/dnanexus/combined_files/${prefix}.fusion_inspector_web.html ]; then
+              echo "html file exists"
+              find /home/dnanexus/combined_files -type f -name ${prefix}.fusion_inspector_web.html -printf "%f\n" | \
+              xargs -I{} mv /home/dnanexus/combined_files/{} /home/dnanexus/out/fi_html/{}
+       else
+              echo "somalier.groups.tsv does not exist as a single sample was used"
+       fi
+
 
        mark-section "Upload the final outputs"
        time dx-upload-all-outputs --parallel
