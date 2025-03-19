@@ -377,7 +377,7 @@ main() {
 
        # if there is fusions predicted. Create a html, else do not create a html as it'll be empty and fail
        number_of_fusions=$(tail -n +2 combined_files/${prefix}.FusionInspector.fusions.abridged.coding_effect.merged.tsv | wc -l)
-       if [ $number_of_fusions >= 1 ]; then
+       if [ $number_of_fusions -ge 1 ]; then
               _create_fusion_inspector_report
        else
               echo "No fusions predicted, so no html report will be outputted"
@@ -410,11 +410,8 @@ main() {
        xargs -I{} mv /home/dnanexus/combined_files/{} /home/dnanexus/out/fi_coding/{}
 
        if [ -f /home/dnanexus/combined_files/${prefix}.fusion_inspector_web.html ]; then
-              echo "html file exists"
               find /home/dnanexus/combined_files -type f -name ${prefix}.fusion_inspector_web.html -printf "%f\n" | \
               xargs -I{} mv /home/dnanexus/combined_files/{} /home/dnanexus/out/fi_html/{}
-       else
-              echo "somalier.groups.tsv does not exist as a single sample was used"
        fi
 
 
