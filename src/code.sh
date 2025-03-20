@@ -345,10 +345,9 @@ main() {
        # can still be in an open state due to parallel uploading still
        # commencing even after subjobs have completed successful
        echo "Waiting 60 seconds to ensure all files are hopefully in a closed state"
-       sleep 60
+       sleep 30
 
        for fusion in "${fusion_lists[@]}"; do
-	       echo $fusion
 	       echo ${fusion%.*}
 	       tar_name=$prefix_$fusion.tar
               mkdir subjob_output/inputs_${fusion%.*}
@@ -357,7 +356,7 @@ main() {
               # check the file state again
               file_state=$(dx describe $sub_job_tars --json | jq -r '.state')
               if [ $file_state = "open" ]; then
-                     sleep 60
+                     sleep 30
               fi
               # try to put all subjob_output folder
               echo "$sub_job_tars" | xargs -P $IO_PROCESSES -n1 -I{} sh -c "dx cat $DX_WORKSPACE_ID:{} | tar xf - -C subjob_output/inputs_${fusion%.*}"
