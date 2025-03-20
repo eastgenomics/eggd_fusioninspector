@@ -341,14 +341,24 @@ main() {
        mark-section "Downloading files from subjobs to the parent job"
        mkdir subjob_output
 
+       # wait 30 seconds before trying to download all files as some files
+       # can still be in an open state due to parallel uploading still
+       # commencing even after subjobs have completed successful
+       echo "Waiting 30 seconds to ensure all files are hopefully in a closed state"
+       sleep 30
+
        for fusion in "${fusion_lists[@]}"; do
-	       echo $fusion
 	       echo ${fusion%.*}
 	       tar_name=$prefix_$fusion.tar
               mkdir subjob_output/inputs_${fusion%.*}
               # download the subjob files currently living in the container
               sub_job_tars=$(dx find data --json --name $tar_name --path "$DX_WORKSPACE_ID:/FI_outputs" | jq -r '.[].id')
-              # try to put all subjob_output folder 
+              # check the file state again
+              file_state=$(dx describe $sub_job_tars --json | jq -r '.state')
+              if [ "$file_state" = "open" ]; then
+                     sleep 30
+              fi
+              # try to put all subjob_output folder
               echo "$sub_job_tars" | xargs -P $IO_PROCESSES -n1 -I{} sh -c "dx cat $DX_WORKSPACE_ID:{} | tar xf - -C subjob_output/inputs_${fusion%.*}"
        done
 
