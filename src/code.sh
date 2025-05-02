@@ -5,6 +5,8 @@ PS4='\000[$(date)]\011'
 export TZ=Europe/London
 set -exo pipefail
 
+sudo apt-get install tree
+
 # set frequency of instance usage in logs to 30 seconds
 kill $(ps aux | grep pcp-dstat | head -n1 | awk '{print $2}')
 /usr/bin/dx-dstat 30
@@ -93,6 +95,7 @@ _scatter() {
        then continue create the combined files and html report.
        '''
        set -exo pipefail
+       sudo apt-get install tree
 
        # prefixes all lines of commands written to stdout with datetime
        PS4='\000[$(date)]\011'
@@ -130,7 +133,7 @@ _scatter() {
               --right_fq /data/in/right_fq_1/${right_fq_1_name},/data/in/right_fq_2/${right_fq_2_name} \
               --out_prefix ${out_filename} \
               --genome_lib_dir /data/${lib_dir}/ctat_genome_lib_build_dir \
-              --examine_coding_effect \
+              --examine_coding_effect --vis \
               --extract_fusion_reads_file /data/temp_out/${out_filename}"
 
 
@@ -174,6 +177,10 @@ _scatter() {
     duration="$SECONDS"
     echo "Scatter job complete for ${fusions_name} in $(($duration / 60))m$(($duration % 60))s"
 
+    tree
+
+    echo "Checking content of the json"
+    cat *.fusion_inspector_web.json
     _sub_job_upload_outputs
 }
 
@@ -190,7 +197,7 @@ _sub_job_upload_outputs() {
     mark-section "Uploading sub job output"
 
     mkdir -p FI_outputs
-    mv /home/dnanexus/temp_out FI_outputs/
+    mv /home/dnanexus/ FI_outputs/
 
     total_files=$(find FI_outputs/ -type f | wc -l)
     total_size=$(du -sh FI_outputs/ | cut -f 1)
@@ -216,7 +223,7 @@ _create_fusion_inspector_report() {
        local required_files=(
               "combined_files/cytoBand.txt"
               "combined_files/$prefix.fa"
-              "combined_files/$prefix.gmap_trinity_GG.fusions.gff3.bed.sorted.bed"
+              "combined_files/$prefix.gmap_trinity_GG.fusions.gff3.bed.sorted.bed.gz"
               "combined_files/$prefix.FusionInspector.fusions.tsv"
               "combined_files/$prefix.FusionInspector.fusions.abridged.coding_effect.merged.tsv"
               "combined_files/$prefix.FusionInspector.fusions.abridged.tsv"
@@ -259,6 +266,44 @@ _create_fusion_inspector_report() {
               exit 1
        fi
 }
+
+concat_files() {
+       input_dir="$1"
+       output_dir="$2"
+       extension="$3"
+       output_filename="$4"
+
+       output_file="$output_dir/$output_filename"
+
+       file=$(find $input_dir -type f -name "$extension" -print -quit)
+       echo $file
+
+       if [[ "$extension" == *.gz ]]; then
+              echo "compressed file"
+              > "${output_file%.*}"
+       else
+              echo "uncompressed file"
+              > "${output_file}"
+       fi
+
+
+       find "$input_dir" -type f -name "$extension" | while read -r file; do
+       if [[ "$file" == *.gz ]]; then
+              # file is compressed so use zcat
+              zcat "$file" >> "${output_file%.*}"
+       else
+              cat "$file" >> "${output_file}"
+       fi
+       done
+
+       if [[ "$extension" == *.gz ]]; then
+              bgzip ${output_file%.*}
+       fi
+
+
+    echo "Combined file created at: $output_file"
+}
+
 
 
 main() {
@@ -362,29 +407,43 @@ main() {
               echo "$sub_job_tars" | xargs -P $IO_PROCESSES -n1 -I{} sh -c "dx cat $DX_WORKSPACE_ID:{} | tar xf - -C subjob_output/inputs_${fusion%.*}"
        done
 
-
        mark-section "Generating the html report containing all the fusions detected"
        mkdir combined_files
 
        # to make the fusion inspector report html, we need to merge the
        # output from each child job which is in its own directory under
        # subjob_output folder
+       ls -R  subjob_output/inputs_${fusion%.*}/FI_outputs/temp_out
 
-       find subjob_output -name "*.cytoBand.txt" -exec cat '{}' + -quit >> combined_files/cytoBand.txt
+
        find subjob_output -name "*.fa" -exec cat '{}' + -quit >> combined_files/$prefix.fa
-       find subjob_output -name "*.gmap_trinity_GG.fusions.gff3.bed.sorted.bed" -exec cat '{}' + -quit >> combined_files/$prefix.gmap_trinity_GG.fusions.gff3.bed.sorted.bed
-       find subjob_output -type f -name "*.FusionInspector.fusions.tsv" -print0 | xargs -0 awk 'NR==1 {header=$_} FNR==1 && NR!=1 { $_ ~ $header getline; } {print}' >> combined_files/$prefix.FusionInspector.fusions.tsv
-       find subjob_output -type f -name "*.FusionInspector.fusions.abridged.tsv" -print0 | xargs -0 awk 'NR==1 {header=$_} FNR==1 && NR!=1 { $_ ~ $header getline; } {print}' >> combined_files/$prefix.FusionInspector.fusions.abridged.tsv
+
+       concat_files "subjob_output" "combined_files" "cytoBand.txt" "cytoBand.txt"
+       concat_files "subjob_output" "combined_files" "${prefix}_*.gmap_trinity_GG.fusions.gff3.bed.sorted.bed.gz" "${prefix}.gmap_trinity_GG.fusions.gff3.bed.sorted.bed.gz"
+       concat_files "subjob_output" "combined_files" "${prefix}_*.bed" "${prefix}.bed"
+       concat_files "subjob_output" "combined_files" "${prefix}_*.igv.FusionJuncSpan" "${prefix}.igv.FusionJuncSpan"
+       concat_files "subjob_output" "combined_files" "${prefix}_*.gtf" "${prefix}.gtf"
+       # check uncompressed files are ok
+       ls -l combined_files
 
        find subjob_output -type f -name combined_files/$prefix.junction_reads.bam -prune -o -name '*.junction_reads.bam' -exec samtools merge combined_files/$prefix.junction_reads.bam {} +
+       concat_files "subjob_output" "combined_files" "${prefix}_*.junction_reads.*.gz" "${prefix}.junction_reads.bam.bed.gz"
+
        find subjob_output -type f -name combined_files/$prefix.spanning_reads.bam -prune -o -name '*.spanning_reads.bam' -exec samtools merge combined_files/$prefix.spanning_reads.bam {} +
+       #concat_files "subjob_output" "combined_files" "${prefix}_*.spanning_reads.*.gz" "${prefix}.spanning_reads.bam.bed.gz"
+
+       concat_files "subjob_output" "combined_files" "${prefix}_*.bed.sorted.bed.gz" "${prefix}.bed.sorted.bed.gz"
        find subjob_output -type f -name combined_files/$prefix.star.sortedByCoord.out.bam -prune -o -name '*.star.sortedByCoord.out.bam' -exec samtools merge combined_files/$prefix.star.sortedByCoord.out.bam {} +
+
+       find subjob_output -type f -name "*.FusionInspector.fusions.tsv" -print0 | xargs -0 awk 'NR==1 {header=$_} FNR==1 && NR!=1 { $_ ~ $header getline; } {print}' >> combined_files/$prefix.FusionInspector.fusions.tsv
+       find subjob_output -type f -name "*.FusionInspector.fusions.abridged.tsv" -print0 | xargs -0 awk 'NR==1 {header=$_} FNR==1 && NR!=1 { $_ ~ $header getline; } {print}' >> combined_files/$prefix.FusionInspector.fusions.abridged.tsv
 
        # need to merge all the coding effect files, move to all the coding files to a temporary file
        mkdir coding_effect_files
        find subjob_output -type f -name "*.FusionInspector.fusions.abridged.tsv.coding_effect" -print0 | xargs -0 -I {} mv {} ./coding_effect_files
        python3 merge_fusions_tsv.py -a coding_effect_files/*.coding_effect -o combined_files
 
+       ls -l combined_files
        # if there is fusions predicted. Create a html, else do not create a html as it'll be empty and fail
        number_of_fusions=$(tail -n +2 combined_files/${prefix}.FusionInspector.fusions.abridged.coding_effect.merged.tsv | wc -l)
        if [ $number_of_fusions -ge 1 ]; then
