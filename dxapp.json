@@ -112,7 +112,7 @@
     {
       "name": "fi_html",
       "label": "fi_html",
-      "class": "file",
+      "class": "array:file",
       "optional": true,
       "help": "A HTML report of FusionInspector-validated fusions"
     },
