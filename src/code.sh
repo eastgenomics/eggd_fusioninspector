@@ -347,7 +347,7 @@ main() {
        xargs -I{} mv /home/dnanexus/temp_output_files/{} /home/dnanexus/out/fi_coding/{}
 
        find subjob_output -type f -name ${prefix}*.fusion_inspector_web.html | \
-       xargs -I{} mv {} /home/dnanexus/out/fi_html/{}
+       xargs -I{} mv {} /home/dnanexus/out/fi_html/
 
        mark-section "Upload the final outputs"
        time dx-upload-all-outputs --parallel
