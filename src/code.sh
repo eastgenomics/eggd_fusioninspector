@@ -321,7 +321,7 @@ main() {
        python3 merge_fusions_tsv.py -a coding_effect_files/*.coding_effect -o temp_output_files
 
        mark-section "Check what fusion contigs were selected from the BAM file"
-       # cat $(find subjob_output -type f -name "*.consolidated.bam.frag_coords") > 
+       
        find subjob_output -name "*.consolidated.bam.frag_coords" -exec cat '{}' + -quit >> temp_output_files/$prefix.consolidated.bam.frag_coords
        cut -f 1 temp_output_files/$prefix.consolidated.bam.frag_coords | sort | uniq > temp_output_files/${prefix}_fusion_contigs_inspected.txt
        # combine all the fusions we wanted to inspect
