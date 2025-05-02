@@ -130,7 +130,7 @@ _scatter() {
               --right_fq /data/in/right_fq_1/${right_fq_1_name},/data/in/right_fq_2/${right_fq_2_name} \
               --out_prefix ${out_filename} \
               --genome_lib_dir /data/${lib_dir}/ctat_genome_lib_build_dir \
-              --examine_coding_effect \
+              --examine_coding_effect --vis \
               --extract_fusion_reads_file /data/temp_out/${out_filename}"
 
 
@@ -204,60 +204,6 @@ _sub_job_upload_outputs() {
 
     duration=$SECONDS
     echo "Created and uploaded ${fusions_name}.tar in $(($duration / 60))m$(($duration % 60))s"
-}
-
-_create_fusion_inspector_report() {
-       : '''
-       The files within combined_files directory contains the required files to generate the json which is them used to 
-       create the html report.
-       '''
-
-        # Validate input files exist
-       local required_files=(
-              "combined_files/cytoBand.txt"
-              "combined_files/$prefix.fa"
-              "combined_files/$prefix.gmap_trinity_GG.fusions.gff3.bed.sorted.bed"
-              "combined_files/$prefix.FusionInspector.fusions.tsv"
-              "combined_files/$prefix.FusionInspector.fusions.abridged.coding_effect.merged.tsv"
-              "combined_files/$prefix.FusionInspector.fusions.abridged.tsv"
-              "combined_files/$prefix.junction_reads.bam"
-              "combined_files/$prefix.spanning_reads.bam"
-              "combined_files/$prefix.star.sortedByCoord.out.bam"
-       )
-       for file in "${required_files[@]}"; do
-              if [[ ! -e "$file" ]]; then
-                     echo "Error: Required file/directory not found: $file"
-                     exit 1
-              fi
-       done
-
-       # create json file needed for html creation. Uses all the files in the combined_files directory
-       fusion_json="docker run -v /home/dnanexus:/data --rm $DOCKER_IMAGE_ID  \
-       /usr/local/bin/util/create_fusion_inspector_igvjs.py \
-       --fusion_inspector_directory /data/combined_files \
-       --json_outfile /data/combined_files/$prefix.fusion_inspector_web.json \
-       --file_prefix $prefix"
-
-       if [ "$include_trinity" = "true" ]; then
-              mark-section "Adding Trinity de novo reconstruction option to FusionInspector command"
-              fusion_json="${fusion_json} --include_Trinity"
-       fi
-
-       if ! eval "${fusion_json}" ; then
-              echo "Error: Failed to generate JSON file"
-              exit 1
-       fi
-
-
-       # create html report
-       if ! docker run -v /home/dnanexus:/data --rm $DOCKER_IMAGE_ID  /usr/local/bin/fusion-reports/create_fusion_report.py \
-       --html_template /usr/local/bin/util/fusion_report_html_template/igvjs_fusion.html \
-       --fusions_json /data/combined_files/$prefix.fusion_inspector_web.json \
-       --input_file_prefix $prefix \
-       --html_output /data/combined_files/$prefix.fusion_inspector_web.html; then
-              echo "Error: Failed to generate html file"
-              exit 1
-       fi
 }
 
 
@@ -363,67 +309,45 @@ main() {
        done
 
 
-       mark-section "Generating the html report containing all the fusions detected"
-       mkdir combined_files
+       mark-section "Merging fusions tsv files"
+       mkdir temp_output_files
 
-       # to make the fusion inspector report html, we need to merge the
-       # output from each child job which is in its own directory under
-       # subjob_output folder
-
-       find subjob_output -name "*.cytoBand.txt" -exec cat '{}' + -quit >> combined_files/cytoBand.txt
-       find subjob_output -name "*.fa" -exec cat '{}' + -quit >> combined_files/$prefix.fa
-       find subjob_output -name "*.gmap_trinity_GG.fusions.gff3.bed.sorted.bed" -exec cat '{}' + -quit >> combined_files/$prefix.gmap_trinity_GG.fusions.gff3.bed.sorted.bed
-       find subjob_output -type f -name "*.FusionInspector.fusions.tsv" -print0 | xargs -0 awk 'NR==1 {header=$_} FNR==1 && NR!=1 { $_ ~ $header getline; } {print}' >> combined_files/$prefix.FusionInspector.fusions.tsv
-       find subjob_output -type f -name "*.FusionInspector.fusions.abridged.tsv" -print0 | xargs -0 awk 'NR==1 {header=$_} FNR==1 && NR!=1 { $_ ~ $header getline; } {print}' >> combined_files/$prefix.FusionInspector.fusions.abridged.tsv
-
-       find subjob_output -type f -name combined_files/$prefix.junction_reads.bam -prune -o -name '*.junction_reads.bam' -exec samtools merge combined_files/$prefix.junction_reads.bam {} +
-       find subjob_output -type f -name combined_files/$prefix.spanning_reads.bam -prune -o -name '*.spanning_reads.bam' -exec samtools merge combined_files/$prefix.spanning_reads.bam {} +
-       find subjob_output -type f -name combined_files/$prefix.star.sortedByCoord.out.bam -prune -o -name '*.star.sortedByCoord.out.bam' -exec samtools merge combined_files/$prefix.star.sortedByCoord.out.bam {} +
+       find subjob_output -type f -name "*.FusionInspector.fusions.tsv" -print0 | xargs -0 awk 'NR==1 {header=$_} FNR==1 && NR!=1 { $_ ~ $header getline; } {print}' >> temp_output_files/$prefix.FusionInspector.fusions.tsv
+       find subjob_output -type f -name "*.FusionInspector.fusions.abridged.tsv" -print0 | xargs -0 awk 'NR==1 {header=$_} FNR==1 && NR!=1 { $_ ~ $header getline; } {print}' >> temp_output_files/$prefix.FusionInspector.fusions.abridged.tsv
 
        # need to merge all the coding effect files, move to all the coding files to a temporary file
        mkdir coding_effect_files
        find subjob_output -type f -name "*.FusionInspector.fusions.abridged.tsv.coding_effect" -print0 | xargs -0 -I {} mv {} ./coding_effect_files
-       python3 merge_fusions_tsv.py -a coding_effect_files/*.coding_effect -o combined_files
-
-       # if there is fusions predicted. Create a html, else do not create a html as it'll be empty and fail
-       number_of_fusions=$(tail -n +2 combined_files/${prefix}.FusionInspector.fusions.abridged.coding_effect.merged.tsv | wc -l)
-       if [ $number_of_fusions -ge 1 ]; then
-              _create_fusion_inspector_report
-       else
-              echo "No fusions predicted, so no html report will be outputted"
-       fi
+       python3 merge_fusions_tsv.py -a coding_effect_files/*.coding_effect -o temp_output_files
 
        mark-section "Check what fusion contigs were selected from the BAM file"
        # cat $(find subjob_output -type f -name "*.consolidated.bam.frag_coords") > 
-       find subjob_output -name "*.consolidated.bam.frag_coords" -exec cat '{}' + -quit >> combined_files/$prefix.consolidated.bam.frag_coords
-       cut -f 1 combined_files/$prefix.consolidated.bam.frag_coords | sort | uniq > combined_files/${prefix}_fusion_contigs_inspected.txt
+       find subjob_output -name "*.consolidated.bam.frag_coords" -exec cat '{}' + -quit >> temp_output_files/$prefix.consolidated.bam.frag_coords
+       cut -f 1 temp_output_files/$prefix.consolidated.bam.frag_coords | sort | uniq > temp_output_files/${prefix}_fusion_contigs_inspected.txt
        # combine all the fusions we wanted to inspect
-       awk 'NR==1 {header=$_} FNR==1 && NR!=1 { $_ ~ $header getline; } {print}' in/known_fusions/*/* | sort > combined_files/fusion_rescue_list.txt
+       awk 'NR==1 {header=$_} FNR==1 && NR!=1 { $_ ~ $header getline; } {print}' in/known_fusions/*/* | sort > temp_output_files/fusion_rescue_list.txt
        # find fusions that were missed
-       comm -13 combined_files/${prefix}_fusion_contigs_inspected.txt combined_files/fusion_rescue_list.txt > combined_files/${prefix}_missed_fusion_contigs.txt
+       comm -13 temp_output_files/${prefix}_fusion_contigs_inspected.txt temp_output_files/fusion_rescue_list.txt > temp_output_files/${prefix}_missed_fusion_contigs.txt
 
        mark-section "Move results files to their output directories"
 
-       find /home/dnanexus/combined_files -type f -name ${prefix}_fusion_contigs_inspected.txt -printf "%f\n" | \
-       xargs -I{} mv /home/dnanexus/combined_files/{} /home/dnanexus/out/fi_inspected_fusions/{}
+       find /home/dnanexus/temp_output_files -type f -name ${prefix}_fusion_contigs_inspected.txt -printf "%f\n" | \
+       xargs -I{} mv /home/dnanexus/temp_output_files/{} /home/dnanexus/out/fi_inspected_fusions/{}
 
-       find /home/dnanexus/combined_files -type f -name ${prefix}_missed_fusion_contigs.txt -printf "%f\n" | \
-       xargs -I{} mv /home/dnanexus/combined_files/{} /home/dnanexus/out/fi_missed_fusions/{}
+       find /home/dnanexus/temp_output_files -type f -name ${prefix}_missed_fusion_contigs.txt -printf "%f\n" | \
+       xargs -I{} mv /home/dnanexus/temp_output_files/{} /home/dnanexus/out/fi_missed_fusions/{}
 
-       find /home/dnanexus/combined_files -type f -name ${prefix}.FusionInspector.fusions.abridged.tsv -printf "%f\n" | \
-       xargs -I{} mv /home/dnanexus/combined_files/{} /home/dnanexus/out/fi_abridged/{}
+       find /home/dnanexus/temp_output_files -type f -name ${prefix}.FusionInspector.fusions.abridged.tsv -printf "%f\n" | \
+       xargs -I{} mv /home/dnanexus/temp_output_files/{} /home/dnanexus/out/fi_abridged/{}
 
-       find /home/dnanexus/combined_files -type f -name ${prefix}.FusionInspector.fusions.tsv -printf "%f\n" | \
-       xargs -I{} mv /home/dnanexus/combined_files/{} /home/dnanexus/out/fi_full/{}
+       find /home/dnanexus/temp_output_files -type f -name ${prefix}.FusionInspector.fusions.tsv -printf "%f\n" | \
+       xargs -I{} mv /home/dnanexus/temp_output_files/{} /home/dnanexus/out/fi_full/{}
 
-       find /home/dnanexus/combined_files -type f -name ${prefix}.FusionInspector.fusions.abridged.coding_effect.merged.tsv -printf "%f\n" | \
-       xargs -I{} mv /home/dnanexus/combined_files/{} /home/dnanexus/out/fi_coding/{}
+       find /home/dnanexus/temp_output_files -type f -name ${prefix}.FusionInspector.fusions.abridged.coding_effect.merged.tsv -printf "%f\n" | \
+       xargs -I{} mv /home/dnanexus/temp_output_files/{} /home/dnanexus/out/fi_coding/{}
 
-       if [ -f /home/dnanexus/combined_files/${prefix}.fusion_inspector_web.html ]; then
-              find /home/dnanexus/combined_files -type f -name ${prefix}.fusion_inspector_web.html -printf "%f\n" | \
-              xargs -I{} mv /home/dnanexus/combined_files/{} /home/dnanexus/out/fi_html/{}
-       fi
-
+       find subjob_output -type f -name ${prefix}*.fusion_inspector_web.html | \
+       xargs -I{} mv {} /home/dnanexus/out/fi_html/{}
 
        mark-section "Upload the final outputs"
        time dx-upload-all-outputs --parallel
