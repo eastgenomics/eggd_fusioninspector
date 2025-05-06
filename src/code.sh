@@ -312,9 +312,8 @@ main() {
        mark-section "Merging fusions tsv files"
        mkdir temp_output_files
 
-       find subjob_output -type f -name "*.FusionInspector.fusions.tsv" -print0 | xargs -0 awk 'NR==1 {header=$_} FNR==1 && NR!=1 { $_ ~ $header getline; } {print}' >> temp_output_files/$prefix.FusionInspector.fusions.tsv
-       find subjob_output -type f -name "*.FusionInspector.fusions.abridged.tsv" -print0 | xargs -0 awk 'NR==1 {header=$_} FNR==1 && NR!=1 { $_ ~ $header getline; } {print}' >> temp_output_files/$prefix.FusionInspector.fusions.abridged.tsv
-
+       find subjob_output -type f -name "*.FusionInspector.fusions.tsv" -print0 | xargs -0 awk '(FNR == 1 && NR != 1) { next } { print }' >> temp_output_files/$prefix.FusionInspector.fusions.tsv
+       find subjob_output -type f -name "*.FusionInspector.fusions.abridged.tsv" -print0 | xargs -0 awk '(FNR == 1 && NR != 1) { next } { print }' >> temp_output_files/$prefix.FusionInspector.fusions.abridged.tsv
        # need to merge all the coding effect files, move to all the coding files to a temporary file
        mkdir coding_effect_files
        find subjob_output -type f -name "*.FusionInspector.fusions.abridged.tsv.coding_effect" -print0 | xargs -0 -I {} mv {} ./coding_effect_files
