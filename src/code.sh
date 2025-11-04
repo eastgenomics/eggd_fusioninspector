@@ -301,7 +301,10 @@ main() {
               sub_job_tars=$(dx find data --json --name $tar_name --path "$DX_WORKSPACE_ID:/FI_outputs" | jq -r '.[].id')
               # check the file state again
               file_state=$(dx describe $sub_job_tars --json | jq -r '.state')
-              if [ "$file_state" = "open" ]; then
+              if [ "$file_state" != "closed" ]; then
+                     sleep 30
+              fi
+              if [ "$file_state" != "closed" ]; then
                      sleep 30
               fi
               # try to put all subjob_output folder
