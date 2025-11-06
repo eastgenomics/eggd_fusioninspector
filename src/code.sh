@@ -303,6 +303,8 @@ main() {
               file_state=$(dx describe $sub_job_tars --json | jq -r '.state')
               if [ "$file_state" != "closed" ]; then
                      sleep 30
+                     # Re-query file state
+                     file_state=$(dx describe $sub_job_tars --json | jq -r '.state')
               fi
               if [ "$file_state" != "closed" ]; then
                      sleep 30
