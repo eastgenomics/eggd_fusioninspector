@@ -313,6 +313,23 @@ main() {
               echo "$sub_job_tars" | xargs -P $IO_PROCESSES -n1 -I{} sh -c "dx cat $DX_WORKSPACE_ID:{} | tar xf - -C subjob_output/inputs_${fusion%.*}"
        done
 
+       # Check and test file states
+       echo "Testing file states"
+       check_file_state() {
+              local file_state="$1"
+    
+              if [[ $file_state != "closed" ]]; then
+                     echo "Notice: File state is not closed. State is '$file_state' - calling sleep 30"
+                     sleep 30
+                     echo "Notice: Sleep completed, continuing execution"
+              else
+                     echo "File state is 'closed' - no sleep needed"
+              fi
+       }
+       # Test different file states
+       check_file_state "open"
+       check_file_state "closing"
+       check_file_state "closed"
 
        mark-section "Merging fusions tsv files"
        mkdir temp_output_files
