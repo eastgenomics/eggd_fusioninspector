@@ -209,7 +209,6 @@ _sub_job_upload_outputs() {
 
 check_file_state() {
        local file_state="$1"
-    
        if [[ $file_state != "closed" ]]; then
               echo "Notice: File state is not closed. State is '$file_state' - calling sleep 30"
               sleep 30

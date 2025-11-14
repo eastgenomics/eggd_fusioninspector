@@ -5,23 +5,15 @@ sleep() {
     return 0
 }
 
-check_file_state() {
-       local file_state="$1"
-    
-       if [[ $file_state != "closed" ]]; then
-              echo "Notice: File state is not closed. State is '$file_state' - calling sleep 30"
-              sleep 30
-              echo "Notice: Sleep completed, continuing execution"
-       else
-              echo "File state is 'closed' - no sleep needed"
-       fi
-}
+# Extract check_file_state function by name from src/code.sh
+source <(awk '/^check_file_state\(\) \{/,/^}$/' ../src/code.sh)
 
-echo "==== Testing 'open' file state: ===="
+# Run tests
+echo "Testing with 'open' state:"
 check_file_state "open"
-echo ""
-echo "==== Testing 'closing' file state: ===="
+
+echo -e "\nTesting with 'closing' state:"
 check_file_state "closing"
-echo ""
-echo "==== Testing 'closed' file state: ===="
+
+echo -e "\nTesting with 'closed' state:"
 check_file_state "closed"
