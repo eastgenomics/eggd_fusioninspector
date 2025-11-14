@@ -27,6 +27,6 @@ check_file_state "closing"
 echo -e "\nTesting with 'closed' state:"
 SLEEP_CALLED=0
 check_file_state "closed"
-[[ $SLEEP_CALLED -eq 0 ]] || { echo "FAIL: sleep NOT should have been called for 'closed' state"; exit 1; }
+[[ $SLEEP_CALLED -eq 0 ]] || { echo "FAIL: sleep should NOT have been called for 'closed' state"; exit 1; }
 
 echo "All tests passed."
