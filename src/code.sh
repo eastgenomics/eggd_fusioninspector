@@ -207,6 +207,19 @@ _sub_job_upload_outputs() {
 }
 
 
+check_file_state() {
+       local file_state="$1"
+    
+       if [[ $file_state != "closed" ]]; then
+              echo "Notice: File state is not closed. State is '$file_state' - calling sleep 30"
+              sleep 30
+              echo "Notice: Sleep completed, continuing execution"
+       else
+              echo "File state is 'closed' - no sleep needed"
+       fi
+}
+
+
 main() {
        # fail on any error
        set -exo pipefail
@@ -301,35 +314,14 @@ main() {
               sub_job_tars=$(dx find data --json --name $tar_name --path "$DX_WORKSPACE_ID:/FI_outputs" | jq -r '.[].id')
               # check the file state again
               file_state=$(dx describe $sub_job_tars --json | jq -r '.state')
-              if [ "$file_state" != "closed" ]; then
-                     sleep 30
-                     # Re-query file state
-                     file_state=$(dx describe $sub_job_tars --json | jq -r '.state')
-              fi
-              if [ "$file_state" != "closed" ]; then
-                     sleep 30
-              fi
+              check_file_state "$file_state"
+              # Re-query file state if it was not closed and after sleep 30
+              file_state=$(dx describe $sub_job_tars --json | jq -r '.state')
+              check_file_state "$file_state"
               # try to put all subjob_output folder
               echo "$sub_job_tars" | xargs -P $IO_PROCESSES -n1 -I{} sh -c "dx cat $DX_WORKSPACE_ID:{} | tar xf - -C subjob_output/inputs_${fusion%.*}"
        done
 
-       # Check and test file states
-       echo "Testing file states"
-       check_file_state() {
-              local file_state="$1"
-    
-              if [[ $file_state != "closed" ]]; then
-                     echo "Notice: File state is not closed. State is '$file_state' - calling sleep 30"
-                     sleep 30
-                     echo "Notice: Sleep completed, continuing execution"
-              else
-                     echo "File state is 'closed' - no sleep needed"
-              fi
-       }
-       # Test different file states
-       check_file_state "open"
-       check_file_state "closing"
-       check_file_state "closed"
 
        mark-section "Merging fusions tsv files"
        mkdir temp_output_files
